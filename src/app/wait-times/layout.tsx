@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/header";
 import type { Metadata } from "next";
 
@@ -15,7 +16,9 @@ export default function WaitTimesLayout({
         <main>
             <Header />
             <div className="h-full flex flex-col justify-center items-center p-4">
-                {children}
+                <Suspense fallback={null}>
+                    {children}
+                </Suspense>
             </div>
         </main>
     );
