@@ -1,18 +1,10 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import type { RideWaitTimeHistory } from "@/lib/types"
-
-const chartData = [
-    { rideName: "Space Mountain", waitTime: 30 },
-    { rideName: "Pirates of the Caribbean", waitTime: 45 },
-    { rideName: "Haunted Mansion", waitTime: 20 },
-    { rideName: "It's a Small World", waitTime: 15 },
-    { rideName: "Big Thunder Mountain", waitTime: 25 },
-]
 
 const chartConfig = {
     waitTime: {
