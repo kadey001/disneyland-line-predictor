@@ -60,7 +60,9 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
         }
     }
 
-    async getHistory(rideId: number): Promise<RideWaitTimeSnapshot[]> {
+    async getHistory(rideId: number, timeframe?: Date): Promise<RideWaitTimeSnapshot[]> {
+        const PAST_24_HOURS = new Date(Date.now() - 60 * 1000 * 60 * 24);
+        if (!timeframe) timeframe = PAST_24_HOURS;
         const records: Array<{
             id: string;
             rideId: number;
@@ -69,9 +71,8 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
             waitTime: number;
             snapshotTime: Date;
         }> = await this.prisma.rideWaitTimeSnapshot.findMany({
-            where: { rideId },
+            where: { rideId, snapshotTime: { gte: timeframe } },
             orderBy: { snapshotTime: "asc" },
-            // take: 100
         });
         return records.map(r => ({
             id: r.id,
