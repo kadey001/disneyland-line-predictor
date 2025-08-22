@@ -1,32 +1,30 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import type { Ride } from "@/lib/types";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "./ui/select";
 
-interface RideListProps {
+interface RideSelectProps {
     rides: Ride[];
     selectedRideId: number;
     onSelect: (rideId: number) => void;
 }
 
-export default function RideList({ rides, selectedRideId, onSelect }: RideListProps) {
+export default function RideSelect({ rides, selectedRideId, onSelect }: RideSelectProps) {
+    const selectedRide = rides.find(ride => ride.id === selectedRideId);
     return (
-        <ul className="list-disc pl-5">
-            {rides.map((ride) => (
-                <li key={ride.id} className="flex items-center gap-2 mb-2">
-                    <div className="w-24">
-                        <Button
-                            size="sm"
-                            variant={ride.id === selectedRideId ? "default" : "outline"}
-                            onClick={() => onSelect(ride.id)}
-                        >
-                            {ride.id === selectedRideId ? "Selected" : "Select"}
-                        </Button>
-                    </div>
-                    <strong>{ride.name}:</strong> {ride.wait_time} minutes
-                </li>
-            ))
-            }
-        </ul >
-    );
+        <Select onValueChange={(value) => onSelect(parseInt(value))}>
+            <SelectTrigger className="w-[100%]">
+                <SelectValue placeholder={selectedRide ? selectedRide.name : "Select a ride"} />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    {rides.map((ride) => (
+                        <SelectItem key={ride.id} value={ride.id.toString()} onClick={() => console.log(ride.id)}>
+                            {ride.name}
+                        </SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    )
 }

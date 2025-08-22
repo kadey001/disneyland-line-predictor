@@ -22,3 +22,15 @@ export type RideWaitTimeEntry = {
 };
 
 export type RideWaitTimeHistory = RideWaitTimeEntry[];
+
+export type RideWaitTimeTrend = {
+    trend: number;
+    startTime: Date;
+    endTime: Date;
+}
+
+export type RideWaitTimeTrends = RideWaitTimeTrend[];
+
+export type RideWaitTimeTrendMap = {
+    [rideId: number]: RideWaitTimeTrends;
+}
