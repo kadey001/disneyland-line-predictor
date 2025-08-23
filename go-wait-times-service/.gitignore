@@ -1,0 +1,46 @@
+# Binaries
+bootstrap
+main
+*.exe
+
+# Go modules
+go.sum
+
+# IDE
+.vscode/
+.idea/
+
+# Environment files
+.env
+.env.local
+
+# Credentials and keys
+keys/
+*.json
+service-account-key.json
+
+# Database files
+data/*.db
+data/*.db-*
+
+# Logs
+*.log
+
+# Docker
+.dockerignore
+
+# Deployment packages
+*.zip
+
+# Database
+*.db
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
