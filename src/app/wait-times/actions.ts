@@ -1,22 +1,29 @@
 import { IMPORTANT_DISNEYLAND_RIDES } from "@/lib/rides";
-import type { QueueTimeData, RideWaitTimeHistory } from "@/lib/types";
+import type { QueueTimeData, Ride, RideWaitTimeHistory } from "@/lib/types";
 import { PrismaRideWaitTimeRepository } from "@/repositories/prismaRideWaitTimeRepository";
 
 const waitTimeDataSource = new PrismaRideWaitTimeRepository();
 
+type ExpectedWaitTimeData = {
+    all_rides: Ride[];
+    filtered_rides: Ride[];
+    sorted_rides: Ride[];
+    // flat_rides_history: RideWaitTimeHistory;
+    // sorted_ride_history: RideWaitTimeHistory;
+}
+
 export const getWaitTimes = async () => {
-    const queueTimes = await fetch("https://queue-times.com/parks/16/queue_times.json", {
+    const data = await fetch("http://localhost:8080/wait-times", {
         next: { revalidate: 60 } // Revalidate this specific fetch request every 60 seconds
     });
-    const queueTimesData = await queueTimes.json() as QueueTimeData;
 
-    const allRides = queueTimesData.lands.flatMap(land => land.rides);
-    const filteredRides = allRides.filter(ride => IMPORTANT_DISNEYLAND_RIDES.some(r => r.id === ride.id));
+    const { all_rides: allRides, filtered_rides: filteredRides, sorted_rides: sortedRides } = await data.json() as ExpectedWaitTimeData;
 
-    // Sort rides by wait time by default with lowest wait time first
-    const sortedRides = filteredRides.sort((a, b) => a.wait_time - b.wait_time);
+    // Fire-and-forget: save data without blocking the response
+    waitTimeDataSource.saveList(allRides).catch(error =>
+        console.error('Background save failed:', error)
+    );
 
-    await waitTimeDataSource.saveList(allRides);
     const ridesHistory = await Promise.all(sortedRides.map(ride => waitTimeDataSource.getHistory(ride.id)));
     const flatRidesHistory: RideWaitTimeHistory = ridesHistory.flat().map(_ride => ({
         rideId: _ride.rideId,

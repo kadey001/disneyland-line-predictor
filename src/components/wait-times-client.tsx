@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import RideSelect from "@/components/ride-list";
+import RideSelect from "@/components/ride-select";
 import WaitTimeChart from "@/components/wait-time-chart";
 import type { Ride, RideWaitTimeHistory } from "@/lib/types";
 import { calculateTrend } from "@/lib/trend-calculator";
@@ -32,7 +32,7 @@ export default function WaitTimesClient({ rides, ridesHistory }: WaitTimesClient
         <div>
             <RideSelect rides={rides} selectedRideId={selectedRideId} onSelect={setSelectedRideId} />
             {filteredRidesHistory.length > 0 && (
-                <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} />
+                <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
             )}
             <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} ride={selectedRide} />
         </div>
