@@ -2,17 +2,19 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install dependencies first (for better caching)
 COPY package.json package-lock.json* ./
 RUN npm install
 
+# Copy source code
 COPY . .
 
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build Next.js app
-RUN npm run build
-
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+# Set environment for development
+ENV NODE_ENV=development
+
+CMD ["npm", "run", "dev"]

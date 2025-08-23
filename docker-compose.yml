@@ -1,24 +1,54 @@
-version: '3.8'
 services:
-  db:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: disneyland
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
+  # Next.js Frontend Application
   app:
     build: .
-    depends_on:
-      - db
     environment:
-      DATABASE_URL: postgres://postgres:password@db:5432/disneyland
+      DATABASE_URL: ${DATABASE_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      # Enable hot reloading
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "3000:3000"
+    networks:
+      - disneyland-network
+    volumes:
+      # Mount source code for hot reloading
+      - .:/app
+      # Exclude node_modules to avoid conflicts
+      - /app/node_modules
+      # Exclude .next to avoid conflicts
+      - /app/.next
     command: ["npm", "run", "dev"]
-volumes:
-  db_data:
+
+  # Go Wait Times Microservice
+  go-wait-times-service:
+    build: ./go-wait-times-service
+    environment:
+      DATABASE_URL: ${GO_DATABASE_URL}
+      GO_DATABASE_URL: ${GO_DATABASE_URL}
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - disneyland-network
+
+  # Prisma Studio for Database Management
+  prisma-studio:
+    build: .
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "5555:5555"
+    networks:
+      - disneyland-network
+    volumes:
+      # Mount prisma directory for schema hot reloading
+      - ./prisma:/app/prisma
+      - /app/node_modules
+    command: ["npx", "prisma", "studio", "--port", "5555", "--hostname", "0.0.0.0"]
+
+networks:
+  disneyland-network:
+    driver: bridge

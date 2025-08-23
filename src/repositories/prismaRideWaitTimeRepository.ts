@@ -1,4 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client/edge'
+import { withAccelerate } from '@prisma/extension-accelerate'
+
 import { RideWaitTimeSnapshot } from "../models/rideWaitTime";
 import type { Ride } from '@/lib/types';
 
@@ -9,15 +11,15 @@ export interface RideWaitTimeRepository {
 }
 
 export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
-    private prisma = new PrismaClient();
+    private prisma = new PrismaClient().$extends(withAccelerate());
 
     // TODO: have this run in cloud run on a schedule
     async save(snapshot: Ride): Promise<void> {
-        const TEN_MINUTES_AGO = new Date(Date.now() - 60 * 1000 * 10);
+        const FIVE_MINUTES_AGO = new Date(Date.now() - 60 * 1000 * 5);
         const recent = await this.prisma.rideWaitTimeSnapshot.findFirst({
             where: {
                 rideId: snapshot.id,
-                snapshotTime: { gte: TEN_MINUTES_AGO },
+                snapshotTime: { gte: FIVE_MINUTES_AGO },
             },
             orderBy: { snapshotTime: 'desc' },
         });
@@ -35,17 +37,25 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
     }
 
     async saveList(rides: Ride[]): Promise<void> {
-        const TEN_MINUTES_AGO = new Date(Date.now() - 60 * 1000 * 10);
+        const FIVE_MINUTES_AGO = new Date(Date.now() - 60 * 1000 * 5);
         const toSave = [];
         for (const ride of rides) {
-            const recent = await this.prisma.rideWaitTimeSnapshot.findFirst({
-                where: {
-                    rideId: ride.id,
-                    snapshotTime: { gte: TEN_MINUTES_AGO },
-                },
-                orderBy: { snapshotTime: 'desc' },
-            });
-            if (!recent) {
+            const lastUpdatedWaitTime = new Date(ride.last_updated);
+            // Only update if the last updated time is within the last five minutes and we have not already recorded it
+            if (lastUpdatedWaitTime > FIVE_MINUTES_AGO) {
+                // Check if we have a record in the database over the last 5 mins
+                const recent = await this.prisma.rideWaitTimeSnapshot.findFirst({
+                    where: {
+                        rideId: ride.id,
+                        snapshotTime: { gte: FIVE_MINUTES_AGO },
+                    },
+                    orderBy: { snapshotTime: 'desc' },
+                    cacheStrategy: {
+                        ttl: 120,
+                        swr: 180
+                    },
+                });
+                if (recent) continue;
                 toSave.push({
                     rideId: ride.id,
                     rideName: ride.name,
@@ -56,6 +66,7 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
             }
         }
         if (toSave.length > 0) {
+            console.log(`Saving ${toSave.length} ride wait time snapshots`);
             await this.prisma.rideWaitTimeSnapshot.createMany({ data: toSave });
         }
     }
@@ -64,7 +75,7 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
         const PAST_24_HOURS = new Date(Date.now() - 60 * 1000 * 60 * 24);
         if (!timeframe) timeframe = PAST_24_HOURS;
         const records: Array<{
-            id: string;
+            id: number;
             rideId: number;
             rideName: string;
             isOpen: boolean;
@@ -75,7 +86,7 @@ export class PrismaRideWaitTimeRepository implements RideWaitTimeRepository {
             orderBy: { snapshotTime: "asc" },
         });
         return records.map(r => ({
-            id: r.id,
+            id: r.id.toString(),
             rideId: r.rideId,
             rideName: r.rideName,
             isOpen: r.isOpen,

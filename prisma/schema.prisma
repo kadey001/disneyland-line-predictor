@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -9,9 +9,11 @@ generator client {
 
 model RideWaitTimeSnapshot {
   id           Int      @id @default(autoincrement())
-  rideId       Int
-  rideName     String
-  isOpen       Boolean
-  waitTime     Int
-  snapshotTime DateTime
+  rideId       Int      @map("ride_id")
+  rideName     String   @map("ride_name")
+  isOpen       Boolean  @map("is_open")
+  waitTime     Int      @map("wait_time")
+  snapshotTime DateTime @map("snapshot_time")
+
+  @@map("ride_wait_time_snapshots")
 }
