@@ -20,6 +20,12 @@
     "docker:logs": "docker-compose logs -f",
     "docker:build": "docker-compose build",
     "docker:restart": "docker-compose restart",
+    "docker:build-prod": "docker build -f Dockerfile.production -t nextjs-app:local .",
+    "docker:run-prod": "docker run -p 3000:3000 nextjs-app:local",
+    "deploy:gcp": "bash scripts/deploy-nextjs.sh",
+    "deploy:gcp-win": "scripts\\deploy-nextjs.bat",
+    "build:docker": "bash scripts/build-docker.sh",
+    "build:docker-win": "scripts\\build-docker.bat",
     "setup": "npm install && npm run prisma:generate && npm run docker:up && npm run prisma:migrate"
   },
   "dependencies": {
@@ -55,7 +61,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
-    "zod": "^4.0.17"
+    "zod": "^4.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -63,6 +69,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
     "tailwindcss": "^4",

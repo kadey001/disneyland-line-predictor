@@ -92,3 +92,20 @@ docker-compose*
 .git
 .gitignore
 README.md
+
+# Terraform
+terraform/
+*.tf
+*.tfvars
+*.tfstate*
+
+# Scripts
+scripts/
+
+# Go service (not needed for Next.js build)
+go-wait-times-service/
+
+# Development files
+.env.example
+docker-compose.yml
+eslint.config.mjs
