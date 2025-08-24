@@ -6,11 +6,12 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import type { Ride, RideWaitTimeHistory } from "@/lib/types"
 import { useMemo } from "react"
+import { formatDateToChartAxis } from "@/lib/utils"
 
 const chartConfig = {
     waitTime: {
         label: "Wait Time",
-        color: "var(--chart-5)",
+        color: "var(--chart-2)",
     },
 } satisfies ChartConfig
 
@@ -41,7 +42,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
             <CardContent>
                 <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                     <BarChart accessibilityLayer data={transformedData}>
-                        <XAxis dataKey="snapshotTime" label={{ value: 'Snapshot Time', position: 'insideBottom', offset: -5 }} tickFormatter={(tick) => new Date(tick).toLocaleTimeString()} />
+                        <XAxis dataKey="snapshotTime" label={{ value: 'Snapshot Time', position: 'insideBottom', offset: -5 }} tickFormatter={(tick) => formatDateToChartAxis(new Date(tick))} />
                         <YAxis label={{ value: 'Wait Time (minutes)', angle: -90, position: 'insideLeft', offset: 10 }} />
                         <Bar dataKey="waitTime" fill="var(--color-waitTime)" radius={4} />
                         <ChartTooltip
@@ -49,18 +50,18 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                             content={({ active, payload }) => {
                                 if (!active || !payload || !payload.length) return null;
                                 const data = payload[0].payload;
-                                const time = new Date(data.snapshotTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                                const time = formatDateToChartAxis(new Date(data.snapshotTime));
                                 return (
                                     <ChartTooltipContent
                                         active={active}
                                         payload={payload}
                                         formatter={() => (
                                             <div>
-                                                <div>
-                                                    <span><strong>Wait Time:</strong> {data.waitTime} min</span>
+                                                <div className="text-sm border-b pb-1 mb-1">
+                                                    {data.waitTime} min
                                                 </div>
                                                 <div>
-                                                    <span><strong>Time:</strong> {time}</span>
+                                                    <span><strong>Reported At:</strong> {time}</span>
                                                 </div>
                                             </div>
                                         )}

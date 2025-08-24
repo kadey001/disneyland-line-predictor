@@ -13,7 +13,7 @@ export default function RideSelect({ rides, selectedRideId, onSelect }: RideSele
     const selectedRide = rides.find(ride => ride.id === selectedRideId);
     return (
         <Select onValueChange={(value) => onSelect(parseInt(value))}>
-            <SelectTrigger className="w-[100%]">
+            <SelectTrigger aria-label="Select a Disney ride" className="w-[100%]">
                 <SelectValue placeholder={selectedRide ? (
                     <div className="flex items-center gap-2">
                         {selectedRide.name}
@@ -27,6 +27,7 @@ export default function RideSelect({ rides, selectedRideId, onSelect }: RideSele
                         <SelectItem key={ride.id} value={ride.id.toString()} onClick={() => console.log(ride.id)}>
                             {ride.name}
                             <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: ride.is_open ? "green" : "red" }} />
+                            {ride.wait_time} mins
                         </SelectItem>
                     ))}
                 </SelectGroup>

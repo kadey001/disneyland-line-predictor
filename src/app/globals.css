@@ -121,6 +121,44 @@
     @apply bg-background text-foreground;
   }
 
+  /* Prevent Radix UI Select from adding margin to body */
+  body {
+    margin-right: 0 !important;
+  }
+
+  /* Use overlay scrollbars that don't affect layout */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.6) transparent;
+  }
+
+  /* For Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(155, 155, 155, 0.6);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(155, 155, 155, 0.8);
+  }
+
+  /* Modern overlay scrollbar support */
+  @supports (scrollbar-width: auto) {
+    html {
+      scrollbar-width: auto;
+      overflow: overlay;
+    }
+  }
+
   :root {
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);

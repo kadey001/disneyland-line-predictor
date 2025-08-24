@@ -5,6 +5,7 @@ export function useRefresh(interval: number) {
     const router = useRouter();
 
     useEffect(() => {
+        router.refresh()
         const intervalId = setInterval(() => {
             router.refresh();
         }, interval);

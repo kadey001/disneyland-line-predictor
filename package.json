@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:validate-env": "tsx scripts/validate-env.ts",
+    "validate-env": "tsx scripts/validate-env.ts",
+    "validate-env-legacy": "node scripts/validate-env.js",
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "npx prisma generate",

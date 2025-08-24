@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { RideWaitTimeEntry, RideWaitTimeHistory, RideWaitTimeTrends } from "./types";
 
 export function calculateWaitTimeTrends(
@@ -7,7 +8,8 @@ export function calculateWaitTimeTrends(
 
     // Filter out times after midnight and before park opening
     const filteredHistory = history.filter(ride => {
-        const rideTime = ride.snapshotTime.getHours();
+        const snapshotTime = new Date(ride.snapshotTime)
+        const rideTime = snapshotTime.getHours();
         return rideTime >= 8 && rideTime < 24; // Park hours are 8 AM to 12 AM
     });
 
@@ -42,4 +44,9 @@ export const calculateTrend = ({ waitTimeHistory, rideId }: CalculateTrendProps)
     // TODO: Cache the trends so later we can just append to it rather than having to calculate it all over again
 
     return trends;
+};
+
+// Export memoized version of calculateTrend
+export const useMemoizedTrend = (props: CalculateTrendProps) => {
+    return useMemo(() => calculateTrend(props), [props]);
 };

@@ -6,11 +6,12 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import type { QueueTimeData } from "@/lib/types";
+import { config } from "@/lib/config";
 
 // import data from "./data.json"
 
 export default async function Page() {
-  const queueTimes = await fetch("https://queue-times.com/parks/16/queue_times.json");
+  const queueTimes = await fetch(config.QUEUE_TIMES_API_URL);
   const queueTimesData = await queueTimes.json() as QueueTimeData;
 
   const openRides = queueTimesData.lands.flatMap(land =>
