@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import RideSelect from "@/components/ride-select";
 import WaitTimeChart from "@/components/wait-time-chart";
 import type { Ride, RideWaitTimeHistory } from "@/lib/types";
