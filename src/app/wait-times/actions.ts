@@ -1,5 +1,6 @@
 import type { Ride, RideWaitTimeHistory } from "@/lib/types";
 import { config } from "@/lib/config";
+import { filterTodaysRideHistory } from "@/lib/utils";
 
 type ExpectedWaitTimeData = {
     all_rides: Ride[];
@@ -22,15 +23,8 @@ export const getWaitTimes = async () => {
         sorted_ride_history: sortedRideHistory
     } = await data.json() as ExpectedWaitTimeData;
 
-    // Filter out history to be only todays park data from open until closing
-    const today = new Date();
-    const openingTime = new Date(today);
-    openingTime.setHours(8, 0, 0); // Set opening time to 8:00 AM
-
-    const filteredSortedRideHistory = sortedRideHistory.filter(entry => {
-        const entryDate = new Date(entry.snapshotTime);
-        return entryDate >= openingTime;
-    });
+    // Filter out history to be only todays park data from open until closing (PST)
+    const filteredSortedRideHistory = filterTodaysRideHistory(sortedRideHistory);
 
     return { allRides, filteredRides, sortedRides, flatRidesHistory, sortedRideHistory: filteredSortedRideHistory };
 };
