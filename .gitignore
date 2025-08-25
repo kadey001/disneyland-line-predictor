@@ -12,26 +12,72 @@
 
 # testing
 /coverage
+*.lcov
+.nyc_output
 
 # next.js
 /.next/
 /out/
+.next/
+out/
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
+*.log
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
+
+# runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# terraform secrets and sensitive files
+go-wait-times-service/terraform/secrets.tfvars
+go-wait-times-service/terraform/.terraform/
+go-wait-times-service/terraform/.terraform.lock.hcl
+go-wait-times-service/terraform/terraform.tfstate*
+go-wait-times-service/terraform/*.tfstate
+go-wait-times-service/terraform/*.tfstate.*
+
+# service account credentials and API keys
+go-wait-times-service/keys/
+*.json
+!package.json
+!tsconfig.json
+!components.json
+*.pem
+*.key
+*.crt
+
+# Go specific
+go-wait-times-service/tmp/
+go-wait-times-service/temp/
+go-wait-times-service/*.log
+go-wait-times-service/vendor/
+go-wait-times-service/go.work
+go-wait-times-service/go.work.sum
 
 # vercel
 .vercel
@@ -43,3 +89,52 @@ next-env.d.ts
 # prisma
 .prisma
 /prisma/dev.db
+/prisma/*.db
+/prisma/*.db-*
+prisma/migrations/*.sql.bak
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.#*
+#*#
+
+# Archives and compressed files
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.rar
+*.7z
+
+# Security and credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*password*
+*secret*
+*credential*
+auth.json
+config.json
