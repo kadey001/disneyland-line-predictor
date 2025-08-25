@@ -8,7 +8,6 @@ region         = "us-west2"
 
 # Service Configuration
 service_name   = "wait-times-service"
-function_name  = "wait-times-collector"
 environment    = "dev"
 
 # Database Configuration

@@ -22,12 +22,6 @@ variable "service_name" {
   default     = "wait-times-service"
 }
 
-variable "function_name" {
-  description = "The name of the Cloud Function (legacy)"
-  type        = string
-  default     = "wait-times-collector"
-}
-
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
