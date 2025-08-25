@@ -14,18 +14,27 @@ export default function WaitTimesLayout({
 }>) {
     return (
         <div>
-            {/* Background image with blur */}
+            {/* Background image with mobile-optimized positioning */}
             <div
                 className="fixed inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
                     backgroundImage: "url('/background.jpg')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center center",
+                    backgroundRepeat: "no-repeat",
+                    transform: "translate3d(0, 0, 0)",
+                    willChange: "transform",
                     zIndex: -2
                 }}
             />
             {/* Dark overlay for better text readability */}
             <div
                 className="fixed inset-0 bg-black/30"
-                style={{ zIndex: -1 }}
+                style={{
+                    zIndex: -1,
+                    transform: "translate3d(0, 0, 0)",
+                    willChange: "transform"
+                }}
             />
             <div className="relative h-full flex flex-col justify-center items-center">
                 <Suspense fallback={<DisneyLoader />}>

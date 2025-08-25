@@ -129,6 +129,22 @@
     margin-right: 0 !important;
   }
 
+  /* Mobile-specific optimizations for background images */
+  @media (max-width: 768px) {
+    body {
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Prevent iOS scroll bounce that can affect background positioning */
+    html,
+    body {
+      height: 100%;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
   /* Use overlay scrollbars that don't affect layout */
   html {
     scrollbar-width: thin;
