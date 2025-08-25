@@ -2,7 +2,7 @@ import WaitTimesClient from "@/components/wait-times-client";
 import { getWaitTimes } from "./actions";
 
 export default async function WaitTimesPage() {
-    const { sortedRides, sortedRideHistory } = await getWaitTimes();
+    const { sortedRides, sortedRideHistory, mainAttractions } = await getWaitTimes();
 
-    return <WaitTimesClient rides={sortedRides} ridesHistory={sortedRideHistory} />;
+    return <WaitTimesClient rides={sortedRides} ridesHistory={sortedRideHistory} mainAttractions={mainAttractions} />;
 }

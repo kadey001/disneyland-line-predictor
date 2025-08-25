@@ -13,7 +13,7 @@ export default function WaitTimesLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <div>
+        <div className="h-full">
             {/* Background image with mobile-optimized positioning */}
             <div
                 className="fixed inset-0 bg-cover bg-center bg-no-repeat"

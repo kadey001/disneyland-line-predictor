@@ -43,7 +43,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6">
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <ChartContainer config={chartConfig} className="min-h-[200px] max-h-[600px] w-full">
                     <BarChart accessibilityLayer data={transformedData}>
                         <XAxis dataKey="snapshotTime" label={{ value: 'Snapshot Time', position: 'insideBottom', offset: -5 }} tickFormatter={(tick) => formatDateToChartAxis(new Date(tick))} />
                         <YAxis

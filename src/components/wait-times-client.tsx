@@ -3,18 +3,20 @@ import { useState, useMemo } from "react";
 import RideSelect from "@/components/ride-select";
 import WaitTimeChart from "@/components/wait-time-chart";
 import TimeFilterSelector, { type TimeFilter } from "./time-filter-selector";
-import type { Ride, RideWaitTimeHistory } from "@/lib/types";
+import type { LiveRideData, Ride, RideWaitTimeHistory } from "@/lib/types";
 import { calculateWaitTimeTrends } from "@/lib/trend-calculator";
 import WaitTimeTrendChart from "./wait-time-trend-chart";
+import WaitTimeForecastChart from "./wait-time-forecast-chart";
 import { useRefresh } from "@/hooks/use-refresh";
 import { useFilteredRideHistory } from "@/hooks/use-filtered-ride-history";
 
 interface WaitTimesClientProps {
     rides: Ride[];
     ridesHistory: RideWaitTimeHistory;
+    mainAttractions: LiveRideData;
 }
 
-export default function WaitTimesClient({ rides, ridesHistory }: WaitTimesClientProps) {
+export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }: WaitTimesClientProps) {
     const [selectedRideId, setSelectedRideId] = useState(rides[0]?.id ?? null);
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('full-day');
 
@@ -25,6 +27,11 @@ export default function WaitTimesClient({ rides, ridesHistory }: WaitTimesClient
     const selectedRide = useMemo(() => {
         return rides.find(ride => ride.id === selectedRideId);
     }, [rides, selectedRideId]);
+
+    const selectedLiveRideData = useMemo(() => {
+        if (!selectedRide) return undefined;
+        return mainAttractions.find(attraction => attraction.name === selectedRide.name);
+    }, [mainAttractions, selectedRide]);
 
     const { filteredRidesHistory } = useFilteredRideHistory(
         ridesHistory,
@@ -47,6 +54,8 @@ export default function WaitTimesClient({ rides, ridesHistory }: WaitTimesClient
                 <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
                 <div className="mt-2" />
                 <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} ride={selectedRide} />
+                <div className="mt-2" />
+                <WaitTimeForecastChart liveRideData={selectedLiveRideData} />
             </div>
         </div>
     );

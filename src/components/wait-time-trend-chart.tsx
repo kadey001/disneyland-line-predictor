@@ -30,7 +30,7 @@ export default function WaitTimeTrendChart({ rideWaitTimeTrend, ride }: WaitTime
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6">
-                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <ChartContainer config={chartConfig} className="min-h-[200px] max-h-[400px] w-full">
                     <LineChart accessibilityLayer data={rideWaitTimeTrend}>
                         <XAxis dataKey="endTime" label={{ value: 'Snapshot Time', position: 'insideBottom', offset: -5 }} tickFormatter={(tick) => formatDateToChartAxis(new Date(tick))} />
                         <YAxis label={{ value: 'Δ Time', angle: -90, position: 'insideLeft', offset: 10, style: { textAnchor: 'middle' }, className: 'translate-x-2 md:translate-x-0' }} />
