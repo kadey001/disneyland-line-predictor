@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/components/header";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { ErrorBoundaryWrapper } from "@/components/error-boundary-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,15 +31,18 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}
+        suppressHydrationWarning={true}
       >
-        <ThemeProvider>
-          <Header />
-          <main className="flex-1 overflow-auto">
-            {children}
-            <Analytics />
-            <SpeedInsights />
-          </main>
-        </ThemeProvider>
+        <ErrorBoundaryWrapper>
+          <ThemeProvider>
+            <Header />
+            <main className="flex-1 overflow-auto">
+              {children}
+              <Analytics />
+              <SpeedInsights />
+            </main>
+          </ThemeProvider>
+        </ErrorBoundaryWrapper>
       </body>
     </html>
   );
