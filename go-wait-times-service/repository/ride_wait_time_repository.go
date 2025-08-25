@@ -1,11 +1,10 @@
 package repository
 
 import (
+	"context"
 	"disneyland-wait-times/models"
 	"fmt"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -25,39 +24,6 @@ type PostgresRideWaitTimeRepository struct {
 	db *gorm.DB
 }
 
-// convertPrismaAccelerateURL converts a Prisma Accelerate URL to a standard PostgreSQL URL
-func convertPrismaAccelerateURL(prismaURL string) (string, error) {
-	// If it's not a Prisma Accelerate URL, return as-is
-	if !strings.HasPrefix(prismaURL, "prisma+postgres://") {
-		return prismaURL, nil
-	}
-
-	// Check if there's a fallback URL for Go services
-	goDbURL := os.Getenv("GO_DATABASE_URL")
-	if goDbURL != "" {
-		fmt.Println("Using GO_DATABASE_URL for Go service connection")
-		return goDbURL, nil
-	}
-
-	// If no fallback, try to construct from Prisma Accelerate URL
-	// Parse the Prisma Accelerate URL
-	u, err := url.Parse(prismaURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse Prisma URL: %v", err)
-	}
-
-	// Extract the API key from the query parameters
-	apiKey := u.Query().Get("api_key")
-	if apiKey == "" {
-		return "", fmt.Errorf("no api_key found in Prisma Accelerate URL")
-	}
-
-	// For Prisma Accelerate connections, we need the underlying database connection
-	// Since Prisma Accelerate is a proxy, we need the actual database credentials
-	// This should be provided via GO_DATABASE_URL environment variable
-	return "", fmt.Errorf("Prisma Accelerate URL detected but no GO_DATABASE_URL provided. Please set GO_DATABASE_URL to your underlying PostgreSQL connection string")
-}
-
 // NewPostgresRideWaitTimeRepository creates a new instance of PostgresRideWaitTimeRepository
 func NewPostgresRideWaitTimeRepository() (*PostgresRideWaitTimeRepository, error) {
 	// Get database URL from environment variable
@@ -73,33 +39,22 @@ func NewPostgresRideWaitTimeRepository() (*PostgresRideWaitTimeRepository, error
 	}
 	fmt.Printf("Original DATABASE_URL (first %d chars): %s...\n", urlLen, databaseURL[:urlLen])
 
-	// Convert Prisma Accelerate URL to standard PostgreSQL URL if needed
-	convertedURL, err := convertPrismaAccelerateURL(databaseURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert database URL: %v", err)
-	}
-
 	// Debug: Print the first 50 characters of the converted database URL
-	convertedLen := len(convertedURL)
+	convertedLen := len(databaseURL)
 	if convertedLen > 50 {
 		convertedLen = 50
 	}
-	fmt.Printf("Converted DATABASE_URL (first %d chars): %s...\n", convertedLen, convertedURL[:convertedLen])
+	fmt.Printf("Converted DATABASE_URL (first %d chars): %s...\n", convertedLen, databaseURL[:convertedLen])
 
-	db, err := gorm.Open(postgres.Open(convertedURL), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
-			TablePrefix: "",
+			TablePrefix:   "",
 			SingularTable: false,
 		},
+		PrepareStmt: false, // Disable prepared statements for pgbouncer compatibility
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
-	}
-
-	// Auto-migrate the schema
-	err = db.AutoMigrate(&models.RideWaitTimeSnapshot{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to migrate database schema: %v", err)
 	}
 
 	return &PostgresRideWaitTimeRepository{db: db}, nil
@@ -139,39 +94,69 @@ func (r *PostgresRideWaitTimeRepository) Save(snapshot models.Ride) error {
 func (r *PostgresRideWaitTimeRepository) SaveList(rides []models.Ride) error {
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
 	var toSave []models.RideWaitTimeSnapshot
-
+	
+	// Collect all ride IDs for batch query
+	rideIDs := make([]int, 0, len(rides))
+	rideMap := make(map[int]models.Ride)
+	
 	for _, ride := range rides {
 		lastUpdated, err := time.Parse(time.RFC3339, ride.LastUpdated)
 		if err != nil {
 			lastUpdated = time.Now()
 		}
-
-		// Only update if the last updated time is within the last five minutes and we have not already recorded it
+		
+		// Only consider rides updated within the last 5 minutes
 		if lastUpdated.After(fiveMinutesAgo) {
-			// Check if we have a record in the database over the last 5 mins
-			var recent models.RideWaitTimeSnapshot
-			err := r.db.Where("ride_id = ? AND snapshot_time >= ?", ride.ID, fiveMinutesAgo).
-				Order("snapshot_time DESC").
-				First(&recent).Error
-
-			if err == gorm.ErrRecordNotFound {
-				// No recent snapshot found, add to save list
-				toSave = append(toSave, models.RideWaitTimeSnapshot{
-					RideID:       ride.ID,
-					RideName:     ride.Name,
-					IsOpen:       ride.IsOpen,
-					WaitTime:     ride.WaitTime,
-					SnapshotTime: lastUpdated,
-				})
-			}
+			rideIDs = append(rideIDs, ride.ID)
+			rideMap[ride.ID] = ride
 		}
 	}
-
+	
+	if len(rideIDs) == 0 {
+		return nil
+	}
+	
+	// Batch query to find recent snapshots for all rides
+	var recentSnapshots []models.RideWaitTimeSnapshot
+	err := r.db.Where("ride_id IN ? AND snapshot_time >= ?", rideIDs, fiveMinutesAgo).
+		Select("ride_id, MAX(snapshot_time) as snapshot_time").
+		Group("ride_id").
+		Find(&recentSnapshots).Error
+	
+	if err != nil {
+		return fmt.Errorf("failed to query recent snapshots: %v", err)
+	}
+	
+	// Create a set of ride IDs that have recent snapshots
+	hasRecentSnapshot := make(map[int]bool)
+	for _, snapshot := range recentSnapshots {
+		hasRecentSnapshot[snapshot.RideID] = true
+	}
+	
+	// Add rides without recent snapshots to save list
+	for _, rideID := range rideIDs {
+		if !hasRecentSnapshot[rideID] {
+			ride := rideMap[rideID]
+			lastUpdated, _ := time.Parse(time.RFC3339, ride.LastUpdated)
+			if lastUpdated.IsZero() {
+				lastUpdated = time.Now()
+			}
+			
+			toSave = append(toSave, models.RideWaitTimeSnapshot{
+				RideID:       ride.ID,
+				RideName:     ride.Name,
+				IsOpen:       ride.IsOpen,
+				WaitTime:     ride.WaitTime,
+				SnapshotTime: lastUpdated,
+			})
+		}
+	}
+	
 	if len(toSave) > 0 {
 		fmt.Printf("Saving %d ride wait time snapshots\n", len(toSave))
 		return r.db.CreateInBatches(toSave, 100).Error
 	}
-
+	
 	return nil
 }
 
@@ -194,4 +179,59 @@ func (r *PostgresRideWaitTimeRepository) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+// StartDataCollectionWithContext starts the automated data collection process with graceful shutdown
+func (r *PostgresRideWaitTimeRepository) StartDataCollectionWithContext(ctx context.Context, fetchRideDataFunc func() ([]models.Ride, error)) {
+	ticker := time.NewTicker(2 * time.Minute)
+	
+	go func() {
+		defer ticker.Stop()
+		
+		// Run immediately on start
+		r.collectWithRetry(fetchRideDataFunc)
+		
+		// Then run on schedule
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Println("Data collection stopped gracefully")
+				return
+			case <-ticker.C:
+				r.collectWithRetry(fetchRideDataFunc)
+			}
+		}
+	}()
+}
+
+// collectWithRetry handles data collection with retry logic
+func (r *PostgresRideWaitTimeRepository) collectWithRetry(fetchRideDataFunc func() ([]models.Ride, error)) {
+	maxRetries := 3
+	
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		rides, err := fetchRideDataFunc()
+		if err != nil {
+			fmt.Printf("Attempt %d: Failed to fetch ride data: %v\n", attempt, err)
+			if attempt < maxRetries {
+				time.Sleep(30 * time.Second)
+				continue
+			}
+			fmt.Printf("Failed to fetch ride data after %d attempts\n", maxRetries)
+			return
+		}
+		
+		err = r.SaveList(rides)
+		if err != nil {
+			fmt.Printf("Attempt %d: Failed to save ride data: %v\n", attempt, err)
+			if attempt < maxRetries {
+				time.Sleep(30 * time.Second)
+				continue
+			}
+			fmt.Printf("Failed to save ride data after %d attempts\n", maxRetries)
+			return
+		}
+		
+		fmt.Printf("Successfully collected and saved ride data\n")
+		return
+	}
 }

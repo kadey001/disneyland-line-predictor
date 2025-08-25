@@ -54,6 +54,19 @@ type ImportantRide struct {
 	Name string `json:"name"`
 }
 
+// RideWaitTimeTrend represents a trend calculation between two time points
+type RideWaitTimeTrend struct {
+	Trend     int       `json:"trend"`
+	StartTime time.Time `json:"startTime"`
+	EndTime   time.Time `json:"endTime"`
+}
+
+// RideWaitTimeTrends represents a collection of trend calculations
+type RideWaitTimeTrends []RideWaitTimeTrend
+
+// RideWaitTimeTrendMap represents trends mapped by ride ID
+type RideWaitTimeTrendMap map[int]RideWaitTimeTrends
+
 // WaitTimesResponse represents the complete response from the service
 type WaitTimesResponse struct {
 	AllRides          []Ride                 `json:"all_rides"`

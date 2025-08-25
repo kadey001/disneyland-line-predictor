@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"disneyland-wait-times/models"
 	"disneyland-wait-times/repository"
 	"disneyland-wait-times/service"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -20,9 +24,25 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize repository: %v", err)
 	}
+	defer repo.Close()
 
 	// Initialize service
 	waitTimesService := service.NewWaitTimesService(repo)
+
+	// Set up context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start automated data collection in the background
+	repo.StartDataCollectionWithContext(ctx, func() ([]models.Ride, error) {
+		queueTimesData, err := waitTimesService.FetchQueueTimesData()
+		if err != nil {
+			return nil, err
+		}
+		return waitTimesService.ExtractAllRides(queueTimesData), nil
+	})
+
+	log.Println("Automated data collection started")
 
 	// Set up HTTP handlers
 	http.HandleFunc("/wait-times", func(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +85,7 @@ func main() {
 
 		log.Println("Starting wait times collection process...")
 
-		result, err := waitTimesService.GetWaitTimes(true) // Save data to database
+		err := waitTimesService.CollectAndStoreWaitTimes() // Save data to database
 		if err != nil {
 			log.Printf("Failed to collect wait times: %v", err)
 			http.Error(w, "Failed to collect wait times", http.StatusInternalServerError)
@@ -74,15 +94,13 @@ func main() {
 
 		response := map[string]interface{}{
 			"message": "Successfully collected wait times data",
-			"total_rides": len(result.AllRides),
-			"filtered_rides": len(result.FilteredRides),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(response)
 
-		log.Printf("Successfully collected wait times for %d rides", len(result.AllRides))
+		log.Printf("Successfully collected wait times data")
 	})
 
 	// Health check endpoint
@@ -93,5 +111,18 @@ func main() {
 	})
 
 	log.Printf("Server starting on port %s", port)
+	
+	// Set up graceful shutdown
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		<-sigChan
+		
+		log.Println("Shutdown signal received, stopping data collection...")
+		cancel() // This will stop the data collection goroutine
+		log.Println("Data collection stopped")
+		os.Exit(0)
+	}()
+	
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
