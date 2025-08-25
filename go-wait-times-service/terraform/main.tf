@@ -1,4 +1,10 @@
 # Cloud Run deployment configuration for wait times service
+# 
+# This configuration deploys a self-scheduling Cloud Run service that:
+# - Runs continuously with min_instance_count = 1
+# - Collects Disney wait times data every 2 minutes using internal scheduler
+# - No longer requires Cloud Scheduler as scheduling is handled internally
+# - Includes graceful shutdown handling for data collection
 
 # Enable required APIs
 resource "google_project_service" "cloud_run" {
@@ -11,14 +17,14 @@ resource "google_project_service" "cloud_build" {
   service = "cloudbuild.googleapis.com"
 }
 
-resource "google_project_service" "cloud_scheduler" {
-  project = var.project_id
-  service = "cloudscheduler.googleapis.com"
-}
-
 resource "google_project_service" "artifact_registry" {
   project = var.project_id
   service = "artifactregistry.googleapis.com"
+}
+
+resource "google_project_service" "secret_manager" {
+  project = var.project_id
+  service = "secretmanager.googleapis.com"
 }
 
 # Create Artifact Registry repository for Docker images
@@ -29,6 +35,14 @@ resource "google_artifact_registry_repository" "wait_times_repo" {
   format        = "DOCKER"
 
   depends_on = [google_project_service.artifact_registry]
+}
+
+# Reference existing Secret Manager secret for database connection string
+data "google_secret_manager_secret" "database_connection_string" {
+  project   = var.project_id
+  secret_id = "database-connection-string"
+
+  depends_on = [google_project_service.secret_manager]
 }
 
 # Create a service account for the Cloud Run service
@@ -57,6 +71,14 @@ resource "google_project_iam_member" "cloud_run_sa_monitoring" {
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
+# Grant access to Secret Manager for the service account
+resource "google_secret_manager_secret_iam_member" "database_secret_access" {
+  project   = var.project_id
+  secret_id = data.google_secret_manager_secret.database_connection_string.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
 # Deploy Cloud Run service
 resource "google_cloud_run_v2_service" "wait_times_service" {
   name     = var.service_name
@@ -74,8 +96,13 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
       }
 
       env {
-        name  = "DATABASE_URL"
-        value = var.database_connection_string
+        name = "DATABASE_URL"
+        value_source {
+          secret_key_ref {
+            secret  = data.google_secret_manager_secret.database_connection_string.name
+            version = "latest"
+          }
+        }
       }
 
       resources {
@@ -87,8 +114,8 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
     }
 
     scaling {
-      min_instance_count = 0
-      max_instance_count = 1
+      min_instance_count = 1
+      max_instance_count = 2
     }
   }
 
@@ -100,30 +127,6 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
   depends_on = [
     google_project_service.cloud_run,
     google_service_account.cloud_run_sa
-  ]
-}
-
-# Create Cloud Scheduler job to trigger the Cloud Run service
-resource "google_cloud_scheduler_job" "wait_times_schedule" {
-  name         = "wait-times-schedule"
-  project      = var.project_id
-  region       = var.region
-  schedule     = var.schedule_cron
-  time_zone    = "America/Los_Angeles"
-  description  = "Scheduled job to collect wait times data"
-
-  http_target {
-    http_method = "POST"
-    uri         = "${google_cloud_run_v2_service.wait_times_service.uri}/collect"
-    
-    oidc_token {
-      service_account_email = google_service_account.cloud_run_sa.email
-    }
-  }
-
-  depends_on = [
-    google_project_service.cloud_scheduler,
-    google_cloud_run_v2_service.wait_times_service
   ]
 }
 

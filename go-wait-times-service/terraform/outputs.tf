@@ -8,11 +8,6 @@ output "cloud_run_service_url" {
   value       = google_cloud_run_v2_service.wait_times_service.uri
 }
 
-output "scheduler_job_name" {
-  description = "Name of the Cloud Scheduler job"
-  value       = google_cloud_scheduler_job.wait_times_schedule.name
-}
-
 output "artifact_registry_repo" {
   description = "Artifact Registry repository for Docker images"
   value       = google_artifact_registry_repository.wait_times_repo.name

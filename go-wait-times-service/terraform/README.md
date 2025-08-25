@@ -50,17 +50,32 @@ This directory contains the Terraform configuration and deployment scripts for d
    **Key variables to configure:**
    - `project_id`: Your Google Cloud project ID
    - `project_number`: Your Google Cloud project number (found in project settings)
-   - `region`: Preferred deployment region (default: us-central1)
-   - `database_connection_string`: PostgreSQL connection string
-   - `schedule_cron`: Cron schedule for data collection (default: every minute)
+   - `region`: Preferred deployment region (default: us-west2)
+   - `database_url`: PostgreSQL connection string (will be stored securely in Secret Manager)
+   - `schedule_cron`: Cron schedule for data collection (default: every 5 minutes)
 
 2. **Example terraform.tfvars:**
    ```hcl
    project_id = "your-project-id"
    project_number = "123456789012"
-   region = "us-central1"
-   database_connection_string = "postgresql://user:password@host:5432/database?sslmode=require"
-   schedule_cron = "*/1 * * * *"  # Every minute
+   region = "us-west2"
+   # Note: For security, set database_url via environment variable instead
+   database_url = ""
+   schedule_cron = "*/5 * * * *"  # Every 5 minutes
+   ```
+
+3. **⚠️ IMPORTANT - Secure Database Configuration:**
+   For security, the database connection string should NOT be stored in terraform.tfvars.
+   Instead, use an environment variable:
+   
+   **Windows PowerShell:**
+   ```powershell
+   $env:TF_VAR_database_url = "postgresql://user:password@host:5432/database?sslmode=require"
+   ```
+   
+   **Linux/macOS:**
+   ```bash
+   export TF_VAR_database_url="postgresql://user:password@host:5432/database?sslmode=require"
    ```
 
 3. **Verify Google Cloud permissions**: Ensure your account has the following IAM roles:
@@ -73,7 +88,43 @@ This directory contains the Terraform configuration and deployment scripts for d
 
 ## Deployment
 
-### Option 1: Using deployment scripts (Recommended)
+### Option 1: Secure deployment script (Recommended)
+
+Use the secure deployment script that ensures your database credentials are handled safely:
+
+**Windows:**
+```cmd
+# Set the database URL as an environment variable (replace with your actual connection string)
+set TF_VAR_database_url=postgresql://user:password@host:5432/database?sslmode=require
+
+# Run the secure deployment script from the go-wait-times-service directory
+scripts\secure-deploy-terraform.bat
+```
+
+The secure deployment script will:
+1. Verify that the database URL is set as an environment variable
+2. Initialize Terraform if needed
+3. Show you the planned changes
+4. Ask for confirmation before applying
+5. Store the database URL securely in Google Secret Manager
+6. Deploy all infrastructure
+
+### Option 2: Manual deployment with environment variables
+
+```cmd
+# Set environment variable
+set TF_VAR_database_url=your_database_connection_string
+
+# Navigate to terraform directory
+cd terraform
+
+# Initialize and deploy
+terraform init
+terraform plan
+terraform apply
+```
+
+### Option 3: Using deployment scripts (Legacy)
 
 **Windows:**
 ```cmd

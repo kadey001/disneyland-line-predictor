@@ -28,18 +28,6 @@ variable "function_name" {
   default     = "wait-times-collector"
 }
 
-variable "schedule_cron" {
-  description = "Cron expression for the Cloud Scheduler job"
-  type        = string
-  default     = "*/1 * * * *"  # Every minute (you can change to "0 * * * *" for every hour)
-}
-
-variable "database_connection_string" {
-  description = "PostgreSQL connection string"
-  type        = string
-  sensitive   = true
-}
-
 variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string

@@ -4,6 +4,22 @@
 # GCP Project Configuration
 project_id     = "theme-park-wait-times-app"
 project_number = "602235714983"
+region         = "us-west2"
+
+# Service Configuration
+service_name   = "wait-times-service"
+function_name  = "wait-times-collector"
+environment    = "dev"
+
+# Database Configuration
+# Set this environment variable before running terraform:
+# $env:TF_VAR_database_url = "your-database-connection-string"
+# database_url = "postgresql://..." variables file
+# Copy this file to terraform.tfvars and update with your actual values
+
+# GCP Project Configuration
+project_id     = "theme-park-wait-times-app"
+project_number = "602235714983"
 region         = "us-central1"
 
 # Function Configuration
@@ -19,5 +35,7 @@ environment   = "dev"
 schedule_cron = "*/1 * * * *"
 
 # Database Configuration
-# Update this with your actual PostgreSQL connection string
-database_connection_string = "postgres://username:password@host:port/database?sslmode=require"
+# IMPORTANT: Do NOT put your actual database connection string here!
+# Use environment variable instead: set TF_VAR_database_url=your_actual_connection_string
+# The connection string will be securely stored in Google Secret Manager
+database_url = ""

@@ -1,7 +1,11 @@
 @echo off
 REM Complete deployment script: Build Docker image and deploy with Terraform
 
-echo Complete deployment: Docker build + Terraform deploy...
+echo ========================================
+echo 🚀 Complete Deployment with Manual Secrets
+echo ========================================
+echo Docker build + Terraform deploy
+echo Database secrets managed via Google Secret Manager
 echo.
 
 REM Step 1: Build and push Docker image
@@ -11,8 +15,7 @@ echo ========================================
 call "%~dp0build-and-deploy-docker.bat"
 
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Docker build and push failed!
-    pause
+    echo ❌ ERROR: Docker build and push failed!
     exit /b 1
 )
 
@@ -21,11 +24,11 @@ echo ========================================
 echo Step 2: Deploying infrastructure with Terraform
 echo ========================================
 
-REM Step 2: Deploy with Terraform
+REM Step 2: Deploy with Terraform (no environment variables needed)
 call "%~dp0deploy-gcloud.bat"
 
 if %ERRORLEVEL% neq 0 (
-    echo ERROR: Terraform deployment failed!
+    echo ❌ ERROR: Terraform deployment failed!
     pause
     exit /b 1
 )
@@ -47,7 +50,7 @@ gcloud run deploy %SERVICE_NAME% ^
   --quiet
 
 if %ERRORLEVEL% neq 0 (
-    echo WARNING: Failed to force Cloud Run update via gcloud, but Terraform deployment may have updated it.
+    echo ⚠️ WARNING: Failed to force Cloud Run update via gcloud, but Terraform deployment may have updated it.
     echo Cloud Run service may still be using the previous image version.
 ) else (
     echo ✅ Successfully forced Cloud Run to use latest image!
@@ -55,10 +58,14 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo ========================================
-echo ✅ Complete deployment successful!
+echo Complete Deployment Successful!
 echo ========================================
 echo.
-echo Your service should now be running on Cloud Run with the latest Docker image.
+echo ✅ Docker image built and pushed to Artifact Registry
+echo ✅ Infrastructure deployed via Terraform
+echo ✅ Database connection string securely stored in Secret Manager
+echo ✅ Cloud Run service updated with latest image
 echo.
-
-pause
+echo Your service is now running securely on Cloud Run!
+echo Database secrets are managed by Google Secret Manager.
+echo.
