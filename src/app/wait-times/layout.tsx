@@ -18,7 +18,7 @@ export default function WaitTimesLayout({
             <div
                 className="fixed inset-0 bg-cover bg-center bg-no-repeat"
                 style={{
-                    backgroundImage: "url('/background.jpg')",
+                    backgroundImage: "url('https://kcr90ci7l2.ufs.sh/f/qmwD8TJNhAVRXikesuKbQoO8J7t16hSykZ29wmKMY0lIiBaz')",
                     backgroundSize: "cover",
                     backgroundPosition: "center center",
                     backgroundRepeat: "no-repeat",

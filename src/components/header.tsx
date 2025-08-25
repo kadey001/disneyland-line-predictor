@@ -9,7 +9,7 @@ export default function Header() {
                 <div className="flex-none">
                     <Link href="/">
                         <Image
-                            src="/logo.png"
+                            src="https://kcr90ci7l2.ufs.sh/f/qmwD8TJNhAVR6yCC5S0FLK3hqPkxOiUGzMnp9tgslfyH8C4Z"
                             alt="Disney Logo"
                             width={50}
                             height={50}
