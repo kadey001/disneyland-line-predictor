@@ -25,7 +25,7 @@ This Go microservice handles wait time data collection and serves as the backend
 - **Data Collection**: Fetches current wait times for Disneyland rides from queue-times.com API
 - **Smart Filtering**: Filters and processes only the most important/popular rides
 - **Historical Storage**: Stores wait time snapshots with intelligent deduplication (prevents duplicate entries within 10 minutes)
-- **Multiple Deployment Options**: Supports Google Cloud Functions and traditional server deployment
+- **Cloud Run Deployment**: Self-scheduling service deployed on Google Cloud Run
 - **Database Management**: Uses GORM with PostgreSQL for efficient data storage and retrieval
 - **Health Monitoring**: Built-in health check endpoints and comprehensive error handling
 - **Clean Architecture**: Organized with repository pattern and clear separation of concerns
@@ -35,8 +35,7 @@ This Go microservice handles wait time data collection and serves as the backend
 ```
 go-wait-times-service/
 ├── cmd/                 # Application entry points
-│   ├── cloudfunc/       # Google Cloud Functions entry point
-│   └── server/          # HTTP server entry point
+│   └── server/          # HTTP server entry point (deployed on Cloud Run)
 ├── config/              # Configuration and ride definitions
 ├── models/              # Data models and types
 ├── repository/          # Data access layer (database operations)
@@ -48,45 +47,51 @@ go-wait-times-service/
 
 ## Environment Variables
 
-- `DATABASE_URL`: PostgreSQL connection string (required)
+- `DATABASE_URL`: PostgreSQL connection string (automatically loaded from Google Secret Manager in production)
   - Example: `postgresql://username:password@host:port/database?sslmode=disable`
+  - **Production**: Stored securely in Google Secret Manager as `database-connection-string`
+  - **Local Development**: Set as environment variable
 - `PORT`: HTTP server port (default: 8080, for server mode only)
 
 ## Deployment Options
 
-### Google Cloud Functions (Recommended)
+### Google Cloud Run (Current Deployment)
 
-Serverless deployment with automatic scaling and scheduled execution:
+Self-scheduling containerized service with automatic scaling and secure secret management:
 
 1. **Prerequisites**: 
    - Google Cloud CLI installed and authenticated
    - Terraform installed (version >= 1.0)
-   - Go 1.21+ installed
+   - Docker installed
+   - Database connection string stored in Google Secret Manager
 
 2. **Setup**: 
-   - Configure `terraform/terraform.tfvars` with your project settings and database connection
+   - Configure `terraform/terraform.tfvars` with your project settings (database URL no longer needed in config)
+   - Ensure database connection string is stored in Google Secret Manager as `database-connection-string`
    - Ensure your database is accessible from Google Cloud
 
 3. **Deploy**: 
-   - Windows: Run `scripts/deploy-gcloud.bat`
-   - Linux/macOS: Run `scripts/deploy-gcloud.sh`
+   - Windows: Run `scripts/full-deploy.bat` (complete deployment)
+   - Windows: Run `scripts/build-and-deploy-docker.bat` (Docker build & push only)
+   - Linux/macOS: Run `scripts/build-and-deploy-docker.sh`
 
 4. **What gets deployed**:
-   - Scheduled Cloud Function (triggers every minute via Cloud Scheduler)
-   - HTTP-triggered Cloud Function (for manual testing)
-   - Cloud Scheduler job with configurable cron schedule
-   - Pub/Sub topic for function triggering
-   - IAM service account with minimal permissions
+   - Self-scheduling Cloud Run service (collects data every 2 minutes internally)
+   - Docker image stored in Artifact Registry
+   - IAM service account with minimal permissions including Secret Manager access
+   - Secure database connection via Google Secret Manager
+   - Health check and HTTP endpoints for monitoring
 
 See [terraform/README.md](terraform/README.md) for detailed deployment instructions.
 
-### GitHub Actions CI/CD (Recommended for Production)
+### GitHub Actions CI/CD (Available for Production)
 
 Automated deployment using GitHub Actions with secure credential management:
 
-1. **One-time Setup**:
-   - Run the setup script: `scripts/setup-github-actions.ps1` (Windows) or `scripts/setup-github-actions.sh` (Linux/macOS)
-   - Configure GitHub repository secrets (see [.github/TERRAFORM_SETUP.md](../.github/TERRAFORM_SETUP.md))
+1. **Setup Required**:
+   - Configure GitHub repository secrets for Google Cloud authentication
+   - Set up Terraform state backend in Google Cloud Storage
+   - See main project documentation for CI/CD setup details
 
 2. **Automated Deployments**:
    - **Pull Requests**: Automatically runs `terraform plan` and posts results as comments
@@ -99,8 +104,6 @@ Automated deployment using GitHub Actions with secure credential management:
    - Plan review workflow for safe deployments
    - Format checking and validation
 
-See [.github/TERRAFORM_SETUP.md](../.github/TERRAFORM_SETUP.md) for complete setup instructions.
-
 ### Local Development & Testing
 
 For quick local development and testing:
@@ -111,7 +114,7 @@ For quick local development and testing:
    .\scripts\build-and-deploy-docker.bat
    
    # OR run directly with Go
-   cd cmd/server
+   cd server
    go run main.go
    ```
 
@@ -135,7 +138,7 @@ For containerized deployment, local development, or traditional server hosting:
 
 1. **Local Development**:
 ```bash
-cd cmd/server
+cd server
 go run main.go
 # OR build and run
 go build -o server main.go
@@ -154,6 +157,7 @@ docker run -e DATABASE_URL="your_postgres_url" -p 8080:8080 disneyland-wait-time
 3. **Available Endpoints**:
    - `GET /wait-times` - Fetches and returns current wait times with historical data
    - `GET /health` - Health check endpoint
+   - `POST /collect` - Manual data collection trigger (for testing/manual runs)
 
 ### Development with Docker Compose
 
@@ -240,21 +244,18 @@ This curated list focuses on the most popular attractions that typically have th
 - `gorm.io/driver/postgres` - PostgreSQL driver for GORM
 - `github.com/lib/pq` - Pure Go PostgreSQL driver
 
-**Serverless Dependencies:**
-- Google Cloud Functions framework (automatically included in Cloud Functions environment)
-
 **Development Dependencies:**
 - Go 1.21+ - Core language runtime
 - Docker - For containerized development and deployment
 
 ## Performance Considerations
 
-### Serverless Deployments (Cloud Functions)
-- **Cold Start Optimization**: Database connections are efficiently managed to minimize cold start impact
-- **Execution Time**: Functions typically complete within 10-15 seconds including API calls and database operations
-- **Memory Allocation**: Recommended 256MB+ for optimal performance
-- **Timeout Settings**: Set to 30+ seconds to handle network delays
-- **Concurrency**: Designed to handle multiple concurrent executions safely
+### Cloud Run Deployment
+- **Always-Warm Instance**: Minimum instance count ensures no cold starts during active hours
+- **Execution Time**: Data collection typically completes within 5-10 seconds including API calls and database operations
+- **Memory Allocation**: 512MB allocated for optimal performance
+- **Automatic Scaling**: Scales up to handle traffic spikes, down to minimum instances during low usage
+- **Connection Pooling**: GORM automatically manages database connection pooling
 
 ### Traditional Server Deployment
 - **Connection Pooling**: GORM automatically manages database connection pooling
@@ -294,11 +295,13 @@ The service includes comprehensive error handling and logging:
 
 ## Security Considerations
 
-- **Environment Variables**: All sensitive configuration via environment variables
+- **Environment Variables**: All sensitive configuration via environment variables or secure secret management
+- **Secret Management**: Database URLs stored securely in Google Secret Manager (no credentials in code/config)
 - **Database Connections**: Uses connection strings with SSL/TLS support
 - **API Keys**: No API keys required for queue-times.com (public API)
-- **IAM Roles**: Minimal permission sets for cloud deployments
+- **IAM Roles**: Minimal permission sets for cloud deployments including Secret Manager access
 - **Network Security**: Compatible with VPCs and private subnets
+- **Credential Isolation**: Production secrets never stored in version control or configuration files
 
 ## Development & Testing
 
@@ -308,7 +311,7 @@ The service includes comprehensive error handling and logging:
 export DATABASE_URL="postgresql://username:password@localhost:5432/disneyland?sslmode=disable"
 
 # Run directly
-cd cmd/server
+cd server
 go run main.go
 
 # Or build first
@@ -321,8 +324,11 @@ go build -o server main.go
 # Test the health endpoint
 curl http://localhost:8080/health
 
-# Test wait times collection
+# Test wait times endpoint
 curl http://localhost:8080/wait-times
+
+# Test manual data collection (POST)
+curl -X POST http://localhost:8080/collect
 ```
 
 **Docker Development:**
@@ -338,23 +344,33 @@ This starts the complete development environment with PostgreSQL, the Go service
 
 The service is currently deployed and configured as follows:
 
-- **Platform**: Google Cloud Run
+- **Platform**: Google Cloud Run (self-scheduling service)
 - **Region**: us-west2
-- **Service URL**: Check with `.\scripts\verify-deployment.bat`
+- **Service URL**: `https://wait-times-service-fhixrynusa-wl.a.run.app`
 - **Image**: `us-west2-docker.pkg.dev/theme-park-wait-times-app/wait-times-repo/wait-times-service:latest`
-- **Scheduled Execution**: Every minute via Cloud Scheduler
-- **Database**: PostgreSQL (configured via `DATABASE_URL` environment variable)
+- **Data Collection**: Every 2 minutes internally (no external scheduler needed)
+- **Database**: PostgreSQL (connection string securely stored in Google Secret Manager)
+- **Secret Management**: Database credentials stored as `database-connection-string` secret
 
 ### Key Endpoints:
 - **Health Check**: `/health` - Returns service status
-- **Wait Times**: `/wait-times` - Fetches current wait times and historical data
-- **Manual Collection**: `/collect` - Manually triggers data collection (used by scheduler)
+- **Wait Times**: `/wait-times` - Fetches current wait times and historical data  
+- **Manual Collection**: `POST /collect` - Manually triggers data collection (for testing)
+
+### Secret Management:
+```bash
+# View secret (for administrators)
+gcloud secrets versions access latest --secret="database-connection-string"
+
+# Update secret (if database credentials change)
+echo "new_connection_string" | gcloud secrets versions add database-connection-string --data-file=-
+```
 
 ### Monitoring & Logs:
 ```batch
 # View service status and health
 .\scripts\verify-deployment.bat
 
-# View logs in Google Cloud Console
-gcloud logging read "resource.type=cloud_run_revision" --limit=20
+# View logs in Google Cloud Console (Cloud Run)
+gcloud run services logs read wait-times-service --region=us-west2 --limit=20
 ```
