@@ -34,15 +34,13 @@ This Go microservice handles wait time data collection and serves as the backend
 
 ```
 go-wait-times-service/
-├── cmd/                 # Application entry points
-│   └── server/          # HTTP server entry point (deployed on Cloud Run)
+├── server/              # HTTP server entry point (deployed on Cloud Run)
 ├── config/              # Configuration and ride definitions
 ├── models/              # Data models and types
 ├── repository/          # Data access layer (database operations)
 ├── service/             # Business logic layer
 ├── terraform/           # Infrastructure as Code for Google Cloud
 ├── scripts/             # Deployment and build scripts
-└── keys/                # Service account credentials (gitignored)
 ```
 
 ## Environment Variables
