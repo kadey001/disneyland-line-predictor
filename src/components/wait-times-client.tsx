@@ -20,8 +20,8 @@ export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }
     const [selectedRideId, setSelectedRideId] = useState(rides[0]?.id ?? null);
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('full-day');
 
-    // Refresh router every 30 seconds to get any API updates
-    const REFRESH_INTERVAL_MS = 30000; // 30 seconds
+    // Refresh router every 31 seconds to get any API updates
+    const REFRESH_INTERVAL_MS = 31000; // 31 seconds (1 second after cache expires)
     useRefresh(REFRESH_INTERVAL_MS);
 
     const selectedRide = useMemo(() => {
