@@ -27,7 +27,7 @@ export default function WaitTimesLayout({
                 className="fixed inset-0 bg-black/30"
                 style={{ zIndex: -1 }}
             />
-            <div className="relative h-full flex flex-col justify-center items-center p-4">
+            <div className="relative h-full flex flex-col justify-center items-center">
                 <Suspense fallback={<DisneyLoader />}>
                     {children}
                 </Suspense>

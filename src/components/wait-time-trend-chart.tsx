@@ -6,6 +6,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import type { Ride, RideWaitTimeTrends } from "@/lib/types"
 import { formatDateToChartAxis } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 const chartConfig = {
     waitTime: {
@@ -20,6 +21,8 @@ interface WaitTimeTrendChartProps {
 }
 
 export default function WaitTimeTrendChart({ rideWaitTimeTrend, ride }: WaitTimeTrendChartProps) {
+    const isMobile = useIsMobile();
+
     if (!rideWaitTimeTrend || !ride) return null;
 
     return (
@@ -29,11 +32,11 @@ export default function WaitTimeTrendChart({ rideWaitTimeTrend, ride }: WaitTime
                     Wait Time Trend For {ride.name}
                 </CardTitle>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={chartConfig} className="h-[30vh] w-full">
+            <CardContent className="p-0 md:p-6">
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                     <LineChart accessibilityLayer data={rideWaitTimeTrend}>
                         <XAxis dataKey="endTime" label={{ value: 'Snapshot Time', position: 'insideBottom', offset: -5 }} tickFormatter={(tick) => formatDateToChartAxis(new Date(tick))} />
-                        <YAxis label={{ value: 'Δ Time', angle: -90, position: 'insideLeft', offset: 10 }} />
+                        <YAxis label={{ value: 'Δ Time', angle: -90, position: 'insideLeft', offset: 10, style: { textAnchor: 'middle' }, className: 'translate-x-2 md:translate-x-0' }} />
                         <Line type="step" dataKey="trend" stroke="#2563eb" strokeWidth={3} dot={false} />
                         <ChartTooltip
                             cursor={false}

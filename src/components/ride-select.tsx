@@ -5,12 +5,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 
 interface RideSelectProps {
     rides: Ride[];
-    selectedRideId: number;
+    selectedRide?: Ride;
     onSelect: (rideId: number) => void;
 }
 
-export default function RideSelect({ rides, selectedRideId, onSelect }: RideSelectProps) {
-    const selectedRide = rides.find(ride => ride.id === selectedRideId);
+export default function RideSelect({ rides, selectedRide, onSelect }: RideSelectProps) {
     return (
         <Select onValueChange={(value) => onSelect(parseInt(value))}>
             <SelectTrigger aria-label="Select a Disney ride" className="w-[100%]">
