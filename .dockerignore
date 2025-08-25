@@ -1,4 +1,5 @@
-node_modules
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -8,16 +9,18 @@ yarn-error.log*
 .next/
 out/
 
-# Production build
+# Production build (for different build contexts)
 build/
 dist/
 
-# Environment files
-.env*.local
+# Environment files (all variants)
+.env*
+!.env.example
 
 # Logs
 logs
 *.log
+lerna-debug.log*
 
 # Runtime data
 pids
