@@ -18,7 +18,7 @@ var IMPORTANT_DISNEYLAND_RIDES = []models.ImportantRide{
 }
 
 // IsImportantRide checks if a ride ID is in the important rides list
-func IsImportantRide(rideID int) bool {
+func IsImportantRide(rideID int64) bool {
 	for _, ride := range IMPORTANT_DISNEYLAND_RIDES {
 		if ride.ID == rideID {
 			return true

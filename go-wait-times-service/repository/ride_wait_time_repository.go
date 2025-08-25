@@ -16,7 +16,7 @@ import (
 type RideWaitTimeRepository interface {
 	Save(snapshot models.Ride) error
 	SaveList(snapshots []models.Ride) error
-	GetHistory(rideID int) ([]models.RideWaitTimeSnapshot, error)
+	GetHistory(rideID int64) ([]models.RideWaitTimeSnapshot, error)
 }
 
 // PostgresRideWaitTimeRepository implements RideWaitTimeRepository using PostgreSQL
@@ -96,8 +96,8 @@ func (r *PostgresRideWaitTimeRepository) SaveList(rides []models.Ride) error {
 	var toSave []models.RideWaitTimeSnapshot
 	
 	// Collect all ride IDs for batch query
-	rideIDs := make([]int, 0, len(rides))
-	rideMap := make(map[int]models.Ride)
+	rideIDs := make([]int64, 0, len(rides))
+	rideMap := make(map[int64]models.Ride)
 	
 	for _, ride := range rides {
 		lastUpdated, err := time.Parse(time.RFC3339, ride.LastUpdated)
@@ -128,7 +128,7 @@ func (r *PostgresRideWaitTimeRepository) SaveList(rides []models.Ride) error {
 	}
 	
 	// Create a set of ride IDs that have recent snapshots
-	hasRecentSnapshot := make(map[int]bool)
+	hasRecentSnapshot := make(map[int64]bool)
 	for _, snapshot := range recentSnapshots {
 		hasRecentSnapshot[snapshot.RideID] = true
 	}
@@ -161,7 +161,7 @@ func (r *PostgresRideWaitTimeRepository) SaveList(rides []models.Ride) error {
 }
 
 // GetHistory retrieves historical wait time data for a specific ride
-func (r *PostgresRideWaitTimeRepository) GetHistory(rideID int) ([]models.RideWaitTimeSnapshot, error) {
+func (r *PostgresRideWaitTimeRepository) GetHistory(rideID int64) ([]models.RideWaitTimeSnapshot, error) {
 	past24Hours := time.Now().Add(-24 * time.Hour)
 	
 	var records []models.RideWaitTimeSnapshot

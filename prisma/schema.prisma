@@ -1,19 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model RideWaitTimeSnapshot {
   id           Int      @id @default(autoincrement())
-  rideId       Int      @map("ride_id")
+  rideId       BigInt?  @map("ride_id")
   rideName     String   @map("ride_name")
   isOpen       Boolean  @map("is_open")
-  waitTime     Int      @map("wait_time")
+  waitTime     BigInt?  @map("wait_time")
   snapshotTime DateTime @map("snapshot_time")
 
   @@map("ride_wait_time_snapshots")

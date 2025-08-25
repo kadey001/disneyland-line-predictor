@@ -228,7 +228,7 @@ func (s *WaitTimesService) CalculateWaitTimeTrends(history []models.RideWaitTime
 		curr := filteredHistory[i]
 		
 		trend := models.RideWaitTimeTrend{
-			Trend:     curr.WaitTime - prev.WaitTime,
+			Trend:     int(curr.WaitTime - prev.WaitTime),
 			StartTime: prev.SnapshotTime,
 			EndTime:   curr.SnapshotTime,
 		}
@@ -242,7 +242,7 @@ func (s *WaitTimesService) CalculateWaitTimeTrends(history []models.RideWaitTime
 }
 
 // CalculateTrend calculates the trend for a specific ride from the complete wait time history
-func (s *WaitTimesService) CalculateTrend(waitTimeHistory []models.RideWaitTimeEntry, rideID int) (models.RideWaitTimeTrends, error) {
+func (s *WaitTimesService) CalculateTrend(waitTimeHistory []models.RideWaitTimeEntry, rideID int64) (models.RideWaitTimeTrends, error) {
 	if rideID == 0 {
 		return models.RideWaitTimeTrends{}, fmt.Errorf("rideID cannot be zero")
 	}
@@ -268,7 +268,7 @@ func (s *WaitTimesService) CalculateTrendsForAllRides(waitTimeHistory []models.R
 	trendMap := make(models.RideWaitTimeTrendMap)
 	
 	// Group history by ride ID
-	rideHistoryMap := make(map[int][]models.RideWaitTimeEntry)
+	rideHistoryMap := make(map[int64][]models.RideWaitTimeEntry)
 	for _, entry := range waitTimeHistory {
 		rideHistoryMap[entry.RideID] = append(rideHistoryMap[entry.RideID], entry)
 	}
@@ -283,7 +283,7 @@ func (s *WaitTimesService) CalculateTrendsForAllRides(waitTimeHistory []models.R
 }
 
 // GetHistoryOfWaitTimes allows for a single rideId to be passed or a list of them
-func (s *WaitTimesService) GetHistoryOfWaitTimes(rideID int, rideIDs []int) ([]models.RideWaitTimeEntry, error) {
+func (s *WaitTimesService) GetHistoryOfWaitTimes(rideID int64, rideIDs []int64) ([]models.RideWaitTimeEntry, error) {
 	if len(rideIDs) > 0 {
 		var allHistory []models.RideWaitTimeEntry
 		for _, id := range rideIDs {
