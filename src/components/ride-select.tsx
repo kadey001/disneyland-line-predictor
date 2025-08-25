@@ -18,6 +18,7 @@ export default function RideSelect({ rides, selectedRide, onSelect }: RideSelect
                         <div className="flex items-center gap-2">
                             {selectedRide.name}
                             <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: selectedRide.is_open ? "green" : "red" }} />
+                            {selectedRide.wait_time} mins
                         </div>
                     ) : "Select a ride"} />
                 </SelectTrigger>
