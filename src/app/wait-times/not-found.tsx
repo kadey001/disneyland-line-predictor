@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Clock, RefreshCcw, TriangleAlert } from 'lucide-react'
+import { RefreshCcw, TriangleAlert } from 'lucide-react'
 
 export default function WaitTimesNotFound() {
     return (

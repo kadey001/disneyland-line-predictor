@@ -15,7 +15,7 @@ export default function NotFound() {
                     </div>
                     <CardTitle className="text-xl">Page Not Found</CardTitle>
                     <CardDescription>
-                        The page you're looking for doesn't exist. It might have been moved, deleted, or the URL might be incorrect.
+                        The page you&apos;re looking for doesn&apos;t exist. It might have been moved, deleted, or the URL might be incorrect.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

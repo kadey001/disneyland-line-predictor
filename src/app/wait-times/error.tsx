@@ -3,8 +3,7 @@
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertTriangle, RefreshCw, BarChart3 } from 'lucide-react'
-import Link from 'next/link'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
 
 export default function WaitTimesError({
     error,
@@ -27,7 +26,7 @@ export default function WaitTimesError({
                     </div>
                     <CardTitle className="text-xl">Wait Times Unavailable</CardTitle>
                     <CardDescription>
-                        We're having trouble loading the wait times data. This could be due to a temporary service issue.
+                        We&apos;re having trouble loading the wait times data. This could be due to a temporary service issue.
                         Please try again later or click the button below to retry.
                     </CardDescription>
                 </CardHeader>
