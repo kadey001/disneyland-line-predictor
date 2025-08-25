@@ -12,7 +12,7 @@ interface TimeFilterSelectorProps {
 
 export default function TimeFilterSelector({ value, onValueChange }: TimeFilterSelectorProps) {
     return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg mt-2">
+        <div className="bg-background border border-gray-200 rounded-lg shadow-lg mt-2 text-primary">
             <Select value={value} onValueChange={onValueChange}>
                 <SelectTrigger className="w-full">
                     <SelectValue />
