@@ -6,7 +6,6 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import type { Ride, RideWaitTimeTrends } from "@/lib/types"
 import { formatDateToChartAxis } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
 
 const chartConfig = {
     waitTime: {
@@ -21,8 +20,6 @@ interface WaitTimeTrendChartProps {
 }
 
 export default function WaitTimeTrendChart({ rideWaitTimeTrend, ride }: WaitTimeTrendChartProps) {
-    const isMobile = useIsMobile();
-
     if (!rideWaitTimeTrend || !ride) return null;
 
     return (
