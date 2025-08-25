@@ -5,7 +5,9 @@ import { PARKS, THEME_PARKS_WIKI_API_BASE_URL } from "@/lib/constants";
 import type { ParkData, ExpectedWaitTimeData, RideWaitTimeHistory, LiveRideData } from "@/lib/types";
 
 const getMainAttractions = async (): Promise<LiveRideData> => {
-    const parksDataPromise = PARKS.map(park => fetch(`${THEME_PARKS_WIKI_API_BASE_URL}/entity/${park.id}/live`), { cache: "no-store" });
+    const parksDataPromise = PARKS.map(park => fetch(`${THEME_PARKS_WIKI_API_BASE_URL}/entity/${park.id}/live`, {
+        next: { revalidate: 30 } // Cache for 30 seconds
+    }));
     const parksDataResponseResult = await Promise.all(parksDataPromise);
     if (parksDataResponseResult.some(res => !res.ok)) {
         throw new Error("Failed to fetch park data");
@@ -23,7 +25,7 @@ const getMainAttractions = async (): Promise<LiveRideData> => {
 export const getWaitTimes = async () => {
     const mainAttractions = await getMainAttractions();
     const data = await fetch(config.WAIT_TIMES_API_URL + "/wait-times", {
-        cache: "no-store"
+        next: { revalidate: 30 } // Cache for 30 seconds
     });
     const { all_rides: allRides,
         filtered_rides: filteredRides,
