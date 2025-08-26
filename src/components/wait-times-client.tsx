@@ -17,7 +17,7 @@ interface WaitTimesClientProps {
 }
 
 export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }: WaitTimesClientProps) {
-    const [selectedRideId, setSelectedRideId] = useState(rides[0]?.id ?? null);
+    const [selectedRideName, setSelectedRideName] = useState(rides[0]?.name ?? null);
     const [timeFilter, setTimeFilter] = useState<TimeFilter>('full-day');
 
     // Refresh router every 31 seconds to get any API updates
@@ -25,26 +25,32 @@ export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }
     useRefresh(REFRESH_INTERVAL_MS);
 
     const selectedRide = useMemo(() => {
-        return rides.find(ride => ride.id === selectedRideId);
-    }, [rides, selectedRideId]);
+        return rides.find(ride => ride.name === selectedRideName);
+    }, [rides, selectedRideName]);
 
     const selectedLiveRideData = useMemo(() => {
         if (!selectedRide) return undefined;
         return mainAttractions.find(attraction => attraction.name === selectedRide.name);
     }, [mainAttractions, selectedRide]);
 
-    const { filteredRidesHistory } = useFilteredRideHistory(
+    const { filteredRidesHistory } = useFilteredRideHistory({
         ridesHistory,
-        selectedRideId,
-        timeFilter
-    );
+        timeFilter,
+        selectedRide
+    });
+
+    const filteredAttractions = useMemo(() => {
+        // Only include attractions that we have in the ride history somewhere
+        const rideNames = new Set(ridesHistory.map(item => item.rideName));
+        return mainAttractions.filter(attraction => rideNames.has(attraction.name));
+    }, [filteredRidesHistory, mainAttractions]);
 
     const trends = useMemo(() => calculateWaitTimeTrends(filteredRidesHistory), [filteredRidesHistory]);
 
     return (
         <div className="w-full h-full md:container md:mx-auto">
             {/* Ride Selection Card */}
-            <RideSelect rides={rides} selectedRide={selectedRide} onSelect={setSelectedRideId} />
+            <RideSelect mainAttractions={filteredAttractions} selectedLiveRideData={selectedLiveRideData} onSelect={setSelectedRideName} />
 
             {/* Time Filter Card */}
             <TimeFilterSelector value={timeFilter} onValueChange={setTimeFilter} />

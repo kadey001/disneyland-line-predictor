@@ -1,15 +1,22 @@
 import { useMemo } from "react";
-import type { RideWaitTimeHistory } from "@/lib/types";
+import type { Ride, RideWaitTimeHistory } from "@/lib/types";
 import type { TimeFilter } from "@/components/time-filter-selector";
 
-export function useFilteredRideHistory(
-    ridesHistory: RideWaitTimeHistory,
-    selectedRideId: number | null,
-    timeFilter: TimeFilter
-) {
+interface UseFilteredRideHistory {
+    ridesHistory: RideWaitTimeHistory;
+    timeFilter: TimeFilter;
+    selectedRide?: Ride;
+}
+
+export function useFilteredRideHistory({
+    ridesHistory,
+    timeFilter,
+    selectedRide
+}: UseFilteredRideHistory) {
     const selectedRideHistory = useMemo(() => {
-        return ridesHistory.filter(history => history.rideId === selectedRideId);
-    }, [ridesHistory, selectedRideId]);
+        if (!selectedRide) return [];
+        return ridesHistory.filter(history => history.rideId === selectedRide.id);
+    }, [ridesHistory, selectedRide]);
 
     const filteredRidesHistory = useMemo(() => {
         if (timeFilter === 'full-day') {
