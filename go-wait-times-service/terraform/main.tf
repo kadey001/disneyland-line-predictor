@@ -131,9 +131,10 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
 }
 
 # Allow public access to the Cloud Run service (for manual testing)
-resource "google_cloud_run_service_iam_member" "public_access" {
-  service  = google_cloud_run_v2_service.wait_times_service.name
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  name     = google_cloud_run_v2_service.wait_times_service.name
   location = google_cloud_run_v2_service.wait_times_service.location
+  project  = google_cloud_run_v2_service.wait_times_service.project
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
