@@ -4,7 +4,7 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { LiveRideDataEntry, Ride, RideWaitTimeHistory } from "@/lib/types"
+import type { LiveRideDataEntry, RideWaitTimeHistory } from "@/lib/types"
 import { useMemo } from "react"
 import { formatDateToChartAxis } from "@/lib/utils"
 

@@ -20,7 +20,6 @@ const environmentSchema = z.object({
     // Required variables
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     WAIT_TIMES_API_URL: z.string().url('WAIT_TIMES_API_URL must be a valid URL'),
-    QUEUE_TIMES_API_URL: z.string().url('QUEUE_TIMES_API_URL must be a valid URL'),
 
     // Optional variables
     NEXTAUTH_SECRET: z.string().optional(),
@@ -51,7 +50,6 @@ const envData = {
     NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL || '',
     WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL || 'https://wait-times-service-602235714983.us-west2.run.app',
-    QUEUE_TIMES_API_URL: process.env.QUEUE_TIMES_API_URL || 'https://queue-times.com/parks/16/queue_times.json',
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
 };
@@ -81,7 +79,6 @@ try {
                 NODE_ENV: (envData.NODE_ENV as 'development' | 'production' | 'test') || 'development',
                 DATABASE_URL: envData.DATABASE_URL,
                 WAIT_TIMES_API_URL: envData.WAIT_TIMES_API_URL,
-                QUEUE_TIMES_API_URL: envData.QUEUE_TIMES_API_URL,
                 NEXTAUTH_SECRET: envData.NEXTAUTH_SECRET,
                 NEXTAUTH_URL: envData.NEXTAUTH_URL,
             };

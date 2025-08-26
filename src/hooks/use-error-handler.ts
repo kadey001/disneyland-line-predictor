@@ -1,17 +1,31 @@
 'use client'
 
 import { useEffect } from 'react'
+import { logNetworkError, createRequestContext } from '@/lib/error-logger'
 
 export function useErrorHandler() {
     useEffect(() => {
         const handleError = (error: ErrorEvent) => {
-            console.error('Global error caught:', error.error)
-            // You can send this to your error reporting service
+            logNetworkError('Global JavaScript error', error.error, {
+                ...createRequestContext(),
+                filename: error.filename,
+                lineno: error.lineno,
+                colno: error.colno,
+            })
         }
 
         const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-            console.error('Unhandled promise rejection:', event.reason)
-            // You can send this to your error reporting service
+            // Check if this is a network-related error
+            const isNetworkError = event.reason &&
+                (event.reason.message?.includes('fetch failed') ||
+                    event.reason.code === 'ECONNRESET' ||
+                    event.reason.code === 'UND_ERR_SOCKET')
+
+            if (isNetworkError) {
+                logNetworkError('Unhandled network promise rejection', event.reason, createRequestContext())
+            } else {
+                console.error('Unhandled promise rejection:', event.reason)
+            }
         }
 
         window.addEventListener('error', handleError)

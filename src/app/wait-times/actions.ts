@@ -3,10 +3,14 @@ import { config } from "@/lib/config";
 import { filterTodaysRideHistory } from "@/lib/utils";
 import { PARKS, THEME_PARKS_WIKI_API_BASE_URL } from "@/lib/constants";
 import type { ParkData, ExpectedWaitTimeData, RideWaitTimeHistory, LiveRideData } from "@/lib/types";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 
 const getMainAttractions = async (): Promise<LiveRideData> => {
-    const parksDataPromise = PARKS.map(park => fetch(`${THEME_PARKS_WIKI_API_BASE_URL}/entity/${park.id}/live`, {
-        next: { revalidate: 30 } // Cache for 30 seconds
+    const parksDataPromise = PARKS.map(park => fetchWithRetry(`${THEME_PARKS_WIKI_API_BASE_URL}/entity/${park.id}/live`, {
+        next: { revalidate: 30 }, // Cache for 30 seconds
+        maxRetries: 2,
+        initialDelayMs: 500,
+        timeoutMs: 8000
     }));
     const parksDataResponseResult = await Promise.all(parksDataPromise);
     if (parksDataResponseResult.some(res => !res.ok)) {
@@ -24,14 +28,17 @@ const getMainAttractions = async (): Promise<LiveRideData> => {
 
 export const getWaitTimes = async () => {
     const mainAttractions = await getMainAttractions();
-    const data = await fetch(config.WAIT_TIMES_API_URL + "/wait-times", {
-        next: { revalidate: 30 } // Cache for 30 seconds
+    const data = await fetchWithRetry(config.WAIT_TIMES_API_URL + "/wait-times", {
+        next: { revalidate: 30 }, // Cache for 30 seconds
+        maxRetries: 3,
+        initialDelayMs: 1000,
+        timeoutMs: 10000
     });
-    
+
     if (!data.ok) {
         throw new Error(`Failed to fetch wait times: ${data.status} ${data.statusText}`);
     }
-    
+
     const { all_rides: allRides,
         filtered_rides: filteredRides,
         sorted_rides: sortedRides,
