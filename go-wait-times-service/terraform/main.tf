@@ -87,10 +87,10 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
 
   template {
     service_account = google_service_account.cloud_run_sa.email
-    
+
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/wait-times-service:latest"
-      
+
       ports {
         container_port = 8080
       }
@@ -131,10 +131,9 @@ resource "google_cloud_run_v2_service" "wait_times_service" {
 }
 
 # Allow public access to the Cloud Run service (for manual testing)
-resource "google_cloud_run_v2_service_iam_member" "public_access" {
-  name     = google_cloud_run_v2_service.wait_times_service.name
+resource "google_cloud_run_service_iam_member" "public_access" {
+  service  = google_cloud_run_v2_service.wait_times_service.name
   location = google_cloud_run_v2_service.wait_times_service.location
-  project  = google_cloud_run_v2_service.wait_times_service.project
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

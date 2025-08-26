@@ -7,8 +7,8 @@ project_number = "602235714983"
 region         = "us-west2"
 
 # Service Configuration
-service_name   = "wait-times-service"
-environment    = "dev"
+service_name = "wait-times-service"
+environment  = "dev"
 
 # Database Configuration
 # The database connection string is stored securely in Google Secret Manager

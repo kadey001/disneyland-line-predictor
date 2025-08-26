@@ -18,3 +18,27 @@ model RideWaitTimeSnapshot {
 
   @@map("ride_wait_time_snapshots")
 }
+
+model RideDataHistory {
+  id              String    @id @default(cuid())
+  externalId      String    @map("external_id")
+  parkId          String    @map("park_id")
+  entityType      String    @map("entity_type")
+  name            String
+  status          String
+  lastUpdated     DateTime  @map("last_updated")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  operatingHours  Json[]    @default([]) @map("operating_hours")
+  standbyWaitTime Int?      @map("standby_wait_time")
+  returnTimeState String?   @map("return_time_state")
+  returnStart     DateTime? @map("return_start")
+  returnEnd       DateTime? @map("return_end")
+  forecast        Json[]    @default([])
+
+  @@index([parkId])
+  @@index([entityType])
+  @@index([status])
+  @@index([lastUpdated])
+  @@map("ride_data_history")
+}

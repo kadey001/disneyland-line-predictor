@@ -50,3 +50,21 @@ export const calculateTrend = ({ waitTimeHistory, rideId }: CalculateTrendProps)
 export const useMemoizedTrend = (props: CalculateTrendProps) => {
     return useMemo(() => calculateTrend(props), [props]);
 };
+
+interface CalculateRideWaitTimeTrendProps {
+    waitTimeHistory: RideWaitTimeHistory;
+    rideName?: string;
+}
+
+export const calculateRideWaitTimeTrend = ({ waitTimeHistory, rideName }: CalculateRideWaitTimeTrendProps) => {
+    if (!rideName) return null;
+
+    const rideHistory = waitTimeHistory.filter(history => history.rideName === rideName);
+
+    // Calculate the trend based on the ride's wait time history
+    const trends = calculateWaitTimeTrends(rideHistory);
+
+    // TODO: Cache the trends so later we can just append to it rather than having to calculate it all over again
+
+    return trends;
+};
