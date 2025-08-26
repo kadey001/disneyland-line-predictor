@@ -43,7 +43,7 @@ export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }
         // Only include attractions that we have in the ride history somewhere
         const rideNames = new Set(ridesHistory.map(item => item.rideName));
         return mainAttractions.filter(attraction => rideNames.has(attraction.name));
-    }, [filteredRidesHistory, mainAttractions]);
+    }, [ridesHistory, mainAttractions]);
 
     const trends = useMemo(() => calculateWaitTimeTrends(filteredRidesHistory), [filteredRidesHistory]);
 
