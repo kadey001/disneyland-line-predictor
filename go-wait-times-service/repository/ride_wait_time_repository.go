@@ -4,7 +4,9 @@ import (
 	"context"
 	"disneyland-wait-times/models"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -51,11 +53,27 @@ func NewPostgresRideWaitTimeRepository() (*PostgresRideWaitTimeRepository, error
 			TablePrefix:   "",
 			SingularTable: false,
 		},
-		PrepareStmt: false, // Disable prepared statements for pgbouncer compatibility
+		PrepareStmt: false, // Disable prepared statements for Supabase compatibility
+		// Add Supabase-specific configurations
+		DisableForeignKeyConstraintWhenMigrating: true,
+		// Disable nested transactions since Supabase uses transaction pooling
+		SkipDefaultTransaction: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
+
+	// Configure connection pool for Supabase
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying sql.DB: %v", err)
+	}
+
+	// Supabase-optimized connection pool settings
+	sqlDB.SetMaxOpenConns(10)                    // Limit concurrent connections
+	sqlDB.SetMaxIdleConns(2)                     // Keep fewer idle connections
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)    // Shorter connection lifetime
+	sqlDB.SetConnMaxIdleTime(30 * time.Second)   // Close idle connections quickly
 
 	return &PostgresRideWaitTimeRepository{db: db}, nil
 }
@@ -165,11 +183,32 @@ func (r *PostgresRideWaitTimeRepository) GetHistory(rideID int64) ([]models.Ride
 	past24Hours := time.Now().Add(-24 * time.Hour)
 	
 	var records []models.RideWaitTimeSnapshot
-	err := r.db.Where("ride_id = ? AND snapshot_time >= ?", rideID, past24Hours).
-		Order("snapshot_time ASC").
-		Find(&records).Error
-
-	return records, err
+	
+	// Retry logic for Supabase connection pooling issues
+	maxRetries := 3
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		err := r.db.Where("ride_id = ? AND snapshot_time >= ?", rideID, past24Hours).
+			Order("snapshot_time ASC").
+			Find(&records).Error
+		
+		if err == nil {
+			return records, nil
+		}
+		
+		// Check for prepared statement or connection errors
+		if strings.Contains(strings.ToLower(err.Error()), "prepared statement") || 
+		   strings.Contains(strings.ToLower(err.Error()), "connection") {
+			if attempt < maxRetries {
+				log.Printf("Database connection issue on attempt %d, retrying: %v", attempt, err)
+				time.Sleep(time.Duration(attempt) * time.Second)
+				continue
+			}
+		}
+		
+		return records, fmt.Errorf("failed to get history for ride %d: %v", rideID, err)
+	}
+	
+	return records, fmt.Errorf("failed after %d attempts", maxRetries)
 }
 
 // Close closes the database connection
