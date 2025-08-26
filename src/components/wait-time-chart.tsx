@@ -4,7 +4,7 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { Ride, RideWaitTimeHistory } from "@/lib/types"
+import type { LiveRideDataEntry, Ride, RideWaitTimeHistory } from "@/lib/types"
 import { useMemo } from "react"
 import { formatDateToChartAxis } from "@/lib/utils"
 
@@ -18,7 +18,7 @@ const chartConfig = {
 
 interface WaitTimeChartProps {
     rideWaitTimeHistory: RideWaitTimeHistory
-    selectedRide?: Ride
+    selectedRide?: LiveRideDataEntry
 }
 
 export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: WaitTimeChartProps) {
@@ -30,7 +30,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
     }));
     // Dot that is red or green based on status
     const statusDotColor = useMemo(() => {
-        return selectedRide?.is_open ? "green" : "red";
+        return selectedRide?.status === "OPERATING" ? "green" : "red";
     }, [selectedRide]);
 
     return (
@@ -39,7 +39,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                 <CardTitle>
                     Ride: {selectedRide?.name}
                     <br />
-                    Status: {selectedRide?.is_open ? "Open" : "Closed"}<span className={`inline-block w-2 h-2 rounded-full ml-2`} style={{ backgroundColor: statusDotColor }} />
+                    Status: {selectedRide?.status === "OPERATING" ? "Open" : "Closed"}<span className={`inline-block w-2 h-2 rounded-full ml-2`} style={{ backgroundColor: statusDotColor }} />
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6">

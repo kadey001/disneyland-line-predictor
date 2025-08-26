@@ -15,18 +15,18 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface WaitTimeTrendChartProps {
-    ride?: Ride;
+    selectedRide?: Ride;
     rideWaitTimeTrend?: RideWaitTimeTrends
 }
 
-export default function WaitTimeTrendChart({ rideWaitTimeTrend, ride }: WaitTimeTrendChartProps) {
-    if (!rideWaitTimeTrend || !ride) return null;
+export default function WaitTimeTrendChart({ rideWaitTimeTrend, selectedRide }: WaitTimeTrendChartProps) {
+    if (!rideWaitTimeTrend || !selectedRide) return null;
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>
-                    Wait Time Trend For {ride.name}
+                    Wait Time Trend For {selectedRide.name}
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6">

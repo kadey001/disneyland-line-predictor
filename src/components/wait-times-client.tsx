@@ -57,9 +57,9 @@ export default function WaitTimesClient({ rides, ridesHistory, mainAttractions }
 
             {/* Wait Time Chart Card */}
             <div className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg mt-2 md:p-6 shadow-lg text-white">
-                <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
+                <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedLiveRideData} />
                 <div className="mt-2" />
-                <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} ride={selectedRide} />
+                <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} selectedRide={selectedRide} />
                 <div className="mt-2" />
                 <WaitTimeForecastChart liveRideData={selectedLiveRideData} />
             </div>
