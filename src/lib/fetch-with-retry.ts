@@ -61,6 +61,12 @@ function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function jitter(ms: number) {
+    // +/- 20% jitter
+    const variance = Math.floor(ms * 0.2);
+    return ms - variance + Math.floor(Math.random() * (variance * 2 + 1));
+}
+
 /**
  * Checks if an error should trigger a retry
  */
@@ -124,14 +130,10 @@ export async function fetchWithRetry(
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+            // Let the platform/undici manage connection pooling; avoid forcing Connection headers
             const response = await fetch(url, {
                 ...fetchOptions,
                 signal: controller.signal,
-                headers: {
-                    'Connection': 'keep-alive',
-                    'Keep-Alive': 'timeout=5, max=1000',
-                    ...fetchOptions.headers,
-                },
             });
 
             clearTimeout(timeoutId);
@@ -146,7 +148,44 @@ export async function fetchWithRetry(
                 return response;
             }
 
-            // Log API error
+            // If rate limited (429), log as warn and respect Retry-After if present
+            if (response.status === 429) {
+                const retryAfter = response.headers.get('Retry-After');
+                logApiError(String(url), response, { ...createRequestContext(), retryAfter });
+
+                // Log retry attempt as a warn-level event
+                logRetryAttempt(
+                    attempt + 1,
+                    maxRetries + 1,
+                    String(url),
+                    new Error(`HTTP 429: ${response.statusText}`),
+                    createRequestContext()
+                );
+
+                if (attempt === maxRetries) break;
+
+                // If Retry-After is provided (seconds or HTTP-date), honor it
+                if (retryAfter) {
+                    const seconds = parseInt(retryAfter, 10);
+                    if (!Number.isNaN(seconds)) {
+                        await delay(seconds * 1000);
+                        continue;
+                    }
+                    const date = Date.parse(retryAfter);
+                    if (!Number.isNaN(date)) {
+                        const waitMs = Math.max(0, date - Date.now());
+                        await delay(waitMs);
+                        continue;
+                    }
+                }
+
+                // Fallback to exponential backoff with jitter
+                const retryDelay = jitter(Math.min(initialDelayMs * Math.pow(backoffMultiplier, attempt), maxDelayMs));
+                await delay(retryDelay);
+                continue;
+            }
+
+            // Log API error for other status codes
             logApiError(String(url), response, createRequestContext());
 
             // Log retry attempt for non-ok responses

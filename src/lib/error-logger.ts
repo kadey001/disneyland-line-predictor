@@ -38,11 +38,27 @@ function extractErrorInfo(error: unknown): {
     code?: string;
 } {
     if (error instanceof Error) {
+        // Narrow the cause to an unknown object and extract safely
+        const errWithCause = error as Error & { cause?: unknown };
+        const cause = errWithCause.cause;
         return {
             message: error.message,
             stack: error.stack,
             name: error.name,
             code: (error as Error & { code?: string }).code,
+            ...(cause && typeof cause === 'object' ? (() => {
+                const c = cause as { code?: string; message?: string; socket?: { localAddress?: string; localPort?: number; remoteAddress?: string; remotePort?: number } };
+                return {
+                    causeCode: c.code,
+                    causeMessage: c.message,
+                    causeSocket: c.socket ? {
+                        localAddress: c.socket.localAddress,
+                        localPort: c.socket.localPort,
+                        remoteAddress: c.socket.remoteAddress,
+                        remotePort: c.socket.remotePort,
+                    } : undefined
+                };
+            })() : {}),
         };
     }
 
@@ -103,6 +119,15 @@ export function logNetworkError(
 
     // In production, you might want to send to an external service
     if (isProduction()) {
+        // If this looks like a socket closure from undici, log at warn level in structured form
+        const contextAny = logEntry.context as { causeCode?: string; errorCode?: string } | undefined;
+        const causeCode = contextAny?.causeCode || contextAny?.errorCode;
+        if (causeCode === 'UND_ERR_SOCKET') {
+            // Log as warn to reduce noise for expected socket closes
+            console.warn(JSON.stringify({ ...logEntry, level: 'warn' }));
+            return;
+        }
+
         // Example: Send to your monitoring service
         // sendToMonitoringService(logEntry);
 
