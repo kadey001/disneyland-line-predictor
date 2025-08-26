@@ -27,6 +27,11 @@ export const getWaitTimes = async () => {
     const data = await fetch(config.WAIT_TIMES_API_URL + "/wait-times", {
         next: { revalidate: 30 } // Cache for 30 seconds
     });
+    
+    if (!data.ok) {
+        throw new Error(`Failed to fetch wait times: ${data.status} ${data.statusText}`);
+    }
+    
     const { all_rides: allRides,
         filtered_rides: filteredRides,
         sorted_rides: sortedRides,
