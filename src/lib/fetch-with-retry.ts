@@ -79,6 +79,19 @@ function shouldRetryError(error: unknown): boolean {
 }
 
 /**
+ * Checks if an error is a socket closure that should be handled gracefully
+ */
+function isSocketClosureError(error: unknown): boolean {
+    if (error instanceof TypeError && error.message.includes('fetch failed')) {
+        const cause = (error as { cause?: { code?: string; message?: string } }).cause;
+        if (cause && cause.code === 'UND_ERR_SOCKET' && cause.message?.includes('other side closed')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Checks if an HTTP status code should trigger a retry
  */
 function shouldRetryStatus(status: number, retryStatusCodes: number[]): boolean {
@@ -114,6 +127,11 @@ export async function fetchWithRetry(
             const response = await fetch(url, {
                 ...fetchOptions,
                 signal: controller.signal,
+                headers: {
+                    'Connection': 'keep-alive',
+                    'Keep-Alive': 'timeout=5, max=1000',
+                    ...fetchOptions.headers,
+                },
             });
 
             clearTimeout(timeoutId);
@@ -148,15 +166,40 @@ export async function fetchWithRetry(
         } catch (error) {
             lastError = error instanceof Error ? error : new Error(String(error));
 
-            // Log network error with structured logging
-            logNetworkError(
-                `Network error on attempt ${attempt + 1}/${maxRetries + 1}`,
-                lastError,
-                { ...createRequestContext(), url: String(url), attempt: attempt + 1 }
-            );
+            // Check if this is a socket closure during refresh - handle gracefully
+            if (isSocketClosureError(error)) {
+                console.warn(`Socket closed during request to ${String(url)} - likely due to page refresh`);
+                // For socket closures, don't retry immediately - just log and continue
+                if (attempt === maxRetries) {
+                    // Return a minimal response rather than throwing
+                    return new Response(JSON.stringify({
+                        error: 'Request cancelled due to page refresh',
+                        retryable: true
+                    }), {
+                        status: 499, // Client Closed Request
+                        statusText: 'Client Closed Request'
+                    });
+                }
+            } else {
+                // Log network error with structured logging for other errors
+                logNetworkError(
+                    `Network error on attempt ${attempt + 1}/${maxRetries + 1}`,
+                    lastError,
+                    { ...createRequestContext(), url: String(url), attempt: attempt + 1 }
+                );
+            }
 
             // If this error shouldn't be retried or it's the last attempt, throw
             if (!shouldRetryError(error) || attempt === maxRetries) {
+                // For socket closure errors, throw a more specific error
+                if (isSocketClosureError(error)) {
+                    throw createRetryError(
+                        'Request cancelled due to connection closure (likely page refresh)',
+                        attempt + 1,
+                        undefined,
+                        lastError
+                    );
+                }
                 break;
             }
         }

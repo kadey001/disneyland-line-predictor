@@ -18,30 +18,43 @@ export async function GET() {
                 environment: true,
                 database: !!config.DATABASE_URL,
                 waitTimesApi: !!config.WAIT_TIMES_API_URL,
-                themeParksWikiApi: !!process.env.THEME_PARKS_WIKI_API_BASE_URL
+                themeParksWikiApi: !!THEME_PARKS_WIKI_API_BASE_URL
             },
             config: {
                 waitTimesApiUrl: config.WAIT_TIMES_API_URL,
                 hasNextAuthSecret: !!config.NEXTAUTH_SECRET,
                 hasNextAuthUrl: !!config.NEXTAUTH_URL,
-                hasThemeParksWikiApi: !!process.env.THEME_PARKS_WIKI_API_BASE_URL
+                hasThemeParksWikiApi: !!THEME_PARKS_WIKI_API_BASE_URL
             }
         };
 
         // Optional: Test API connectivity (enable with HEALTH_CHECK_APIS=true)
         if (process.env.HEALTH_CHECK_APIS === 'true') {
             const apiChecks = await Promise.allSettled([
-                fetchWithRetry(config.WAIT_TIMES_API_URL, {
+                fetchWithRetry(config.WAIT_TIMES_API_URL + '/health', {
                     method: 'HEAD',
-                    timeoutMs: 5000,
-                    maxRetries: 1,
-                    initialDelayMs: 500
+                    timeoutMs: 3000, // Shorter timeout for health checks
+                    maxRetries: 0, // No retries for health checks to avoid socket buildup
+                    initialDelayMs: 200
+                }).catch(error => {
+                    // Handle socket errors gracefully in health checks
+                    if (error?.cause?.code === 'UND_ERR_SOCKET') {
+                        console.warn('Socket error in health check - treating as unhealthy');
+                        return new Response('Socket Error', { status: 503 });
+                    }
+                    throw error;
                 }),
                 fetchWithRetry(THEME_PARKS_WIKI_API_BASE_URL + '/destinations', {
                     method: 'HEAD',
-                    timeoutMs: 5000,
-                    maxRetries: 1,
-                    initialDelayMs: 500
+                    timeoutMs: 3000,
+                    maxRetries: 0,
+                    initialDelayMs: 200
+                }).catch(error => {
+                    if (error?.cause?.code === 'UND_ERR_SOCKET') {
+                        console.warn('Socket error in health check - treating as unhealthy');
+                        return new Response('Socket Error', { status: 503 });
+                    }
+                    throw error;
                 }),
             ]);
 
