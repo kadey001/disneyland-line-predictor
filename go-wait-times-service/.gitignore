@@ -44,3 +44,11 @@ data/*.db-*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Terraform artifacts
+terraform/*.tfvars
+terraform/*.tfvars.json
+terraform/*.tfstate*
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate*

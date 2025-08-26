@@ -54,6 +54,16 @@ pids/
 .env.test
 
 # terraform secrets and sensitive files
+# Terraform: ignore state, local cache, lockfiles, and variable files
+# Keep examples (e.g. *.tfvars.example) by negating the example pattern below
+*.tfvars
+!*.tfvars.example
+*.tfvars.json
+*.tfstate*
+.terraform/
+.terraform.lock.hcl
+
+# Also ignore Terraform files in service subfolders (explicit for historical files)
 go-wait-times-service/terraform/secrets.tfvars
 go-wait-times-service/terraform/.terraform/
 go-wait-times-service/terraform/.terraform.lock.hcl
@@ -78,6 +88,11 @@ go-wait-times-service/*.log
 go-wait-times-service/vendor/
 go-wait-times-service/go.work
 go-wait-times-service/go.work.sum
+
+# Executables / build artifacts
+# ignore compiled windows binaries produced by local builds
+/go-services/*.exe
+/go-services/**/*.exe
 
 # vercel
 .vercel
