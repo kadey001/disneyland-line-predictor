@@ -1,58 +1,27 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import type { ReactNode } from "react"
 
-type Theme = "light" | "dark";
-
-interface ThemeContextType {
-    theme: Theme;
-    toggleTheme: () => void;
+interface ThemeProviderProps {
+    children: ReactNode
 }
 
-export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export function useTheme() {
-    const context = useContext(ThemeContext);
-    if (context === undefined) {
-        throw new Error("useTheme must be used within a ThemeProvider");
-    }
-    return context;
-}
-
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<Theme>("light");
-
-    const toggleTheme = () => {
-        setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
-    };
-
-    // Apply theme to document element
-    useEffect(() => {
-        const root = window.document.documentElement;
-        root.classList.remove("light", "dark");
-        root.classList.add(theme);
-    }, [theme]);
-
-    // Load theme from localStorage on mount
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("theme") as Theme;
-        if (savedTheme) {
-            setTheme(savedTheme);
-        } else {
-            // Check system preference
-            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-            setTheme(prefersDark ? "dark" : "light");
-        }
-    }, []);
-
-    // Save theme to localStorage when it changes
-    useEffect(() => {
-        localStorage.setItem("theme", theme);
-    }, [theme]);
-
+export function ThemeProvider({ children }: ThemeProviderProps) {
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <NextThemesProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
             {children}
-        </ThemeContext.Provider>
-    );
+        </NextThemesProvider>
+    )
 }
+
+// Re-export useTheme hook from next-themes for convenience
+export { useTheme } from "next-themes"
+
+// Keep the default export for backward compatibility
+export default ThemeProvider
