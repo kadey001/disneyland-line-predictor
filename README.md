@@ -7,11 +7,33 @@ While existing theme park data sites are good at showing current wait times, the
 ## Architecture
 
 - **Frontend**: Next.js 15 with TypeScript, React 19, Tailwind CSS v4, and shadcn/ui components
-- **Backend**: Go microservice for wait times data collection and API
+- **Backend**: Two Go microservices for data collection and API serving
+  - `live-data-collector-service`: Collects live wait time data from external APIs
+  - `wait-times-api`: Serves wait time data via REST API
 - **Database**: PostgreSQL database with Prisma ORM for schema management
 - **Data Visualization**: Recharts for interactive charts and trend analysis
 - **Deployment**: Docker Compose for development, Google Cloud Functions for production
 - **Infrastructure**: Terraform for Google Cloud resource management
+
+## Service Architecture
+
+The backend consists of two specialized Go microservices:
+
+### Live Data Collector Service (`go-services/live-data-collector-service/`)
+- **Port**: 8081
+- **Purpose**: Collects real-time wait time data from external APIs (queue-times.com)
+- **Responsibilities**:
+  - Scheduled data collection
+  - Data validation and cleaning
+  - Storage in PostgreSQL database
+
+### Wait Times API Service (`go-services/wait-times-api/`)
+- **Port**: 8080
+- **Purpose**: Provides REST API for accessing wait time data
+- **Responsibilities**:
+  - Serving historical and current wait time data
+  - Data aggregation and filtering
+  - API authentication and rate limiting
 
 ## Quick Start
 
@@ -34,7 +56,7 @@ npm run setup
 This command will:
 1. Install Node.js dependencies
 2. Generate Prisma client
-3. Start all Docker services (PostgreSQL database, Go service)
+3. Start all Docker services (PostgreSQL database, Go services)
 4. Run database migrations
 5. Start the Next.js development server
 
@@ -56,6 +78,19 @@ npm run prisma:migrate
 npm run dev
 ```
 
+### Option 3: Go Services Only
+If you only want to run the Go microservices (for testing or API development):
+
+```bash
+# Build and run Go services
+cd go-services/wait-times-api
+go run main.go
+
+# In another terminal
+cd go-services/live-data-collector-service
+go run main.go
+```
+
 ## Services
 
 The application runs the following services:
@@ -63,7 +98,8 @@ The application runs the following services:
 | Service | Port | Description |
 |---------|------|-------------|
 | Next.js App | 3000 | Main web application with dashboard and analytics |
-| Go Service | 8080 | Wait times microservice (data collection & API) |
+| Live Data Collector (Go) | 8081 | Microservice for collecting live wait time data |
+| Wait Times API (Go) | 8080 | REST API for serving wait time data |
 | PostgreSQL | 5432 | Database for historical wait time data |
 | Prisma Studio | 5555 | Database administration UI (manual start) |
 
@@ -94,8 +130,12 @@ The application runs the following services:
 
 ## API Endpoints
 
-### Go Microservice (Port 8080)
+### Wait Times API (Port 8080)
 - `GET /wait-times` - Retrieve current wait times and historical data for all important rides
+- `GET /health` - Health check endpoint
+
+### Live Data Collector (Port 8081)
+- `POST /collect` - Trigger data collection from external APIs
 - `GET /health` - Health check endpoint
 
 ### Next.js Application (Port 3000)
@@ -137,16 +177,36 @@ For Docker development, the PostgreSQL service is automatically configured.
 
 ## Database Schema
 
-The application uses a PostgreSQL database with the following main table:
+The application uses a PostgreSQL database with the following main tables:
 
+### RideWaitTimeSnapshot
 ```sql
--- ride_wait_time_snapshots
 id           SERIAL PRIMARY KEY
-ride_id      INTEGER NOT NULL
+ride_id      BIGINT
 ride_name    VARCHAR NOT NULL
 is_open      BOOLEAN NOT NULL
-wait_time    INTEGER NOT NULL
+wait_time    BIGINT
 snapshot_time TIMESTAMP NOT NULL
+```
+
+### RideDataHistory
+```sql
+id              BIGSERIAL PRIMARY KEY
+external_id     VARCHAR NOT NULL
+park_id         VARCHAR NOT NULL
+entity_type     VARCHAR NOT NULL
+name            VARCHAR NOT NULL
+status          VARCHAR NOT NULL
+last_updated    TIMESTAMP NOT NULL
+created_at      TIMESTAMP DEFAULT NOW()
+updated_at      TIMESTAMP DEFAULT NOW()
+standby_wait_time INTEGER
+return_time_state VARCHAR
+return_start    TIMESTAMP
+return_end      TIMESTAMP
+ride_id         VARCHAR NOT NULL
+operating_hours JSON DEFAULT '[]'
+forecast        JSON DEFAULT '[]'
 ```
 
 ## Important Rides Monitored
@@ -171,8 +231,8 @@ The system tracks wait times for these key Disneyland attractions:
 Run locally using Docker Compose for the full stack experience.
 
 ### Production
-The Go microservice can be deployed to:
-- **Google Cloud Functions** (recommended) - See `go-wait-times-service/terraform/README.md`
+The Go microservices can be deployed to:
+- **Google Cloud Functions** (recommended) - See `terraform/` directory for infrastructure
 - **Google Cloud Run** - Cloud run service using Docker container
 - **Docker containers** - Container-based deployment
 
@@ -188,6 +248,8 @@ The Next.js frontend can be deployed to:
 - **Ride Comparison**: Compare wait times across different attractions
 - **Data Visualization**: Interactive charts using Recharts
 - **Responsive Design**: Mobile-friendly interface with Tailwind CSS
+- **Microservice Architecture**: Separated data collection and API services for better scalability
+- **Docker Support**: Complete containerized development environment
 
 ## Planned Features
 - **Predictive Analytics**: Train ML models using historical data for wait time predictions
