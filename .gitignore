@@ -63,16 +63,16 @@ pids/
 .terraform/
 .terraform.lock.hcl
 
-# Also ignore Terraform files in service subfolders (explicit for historical files)
-go-wait-times-service/terraform/secrets.tfvars
-go-wait-times-service/terraform/.terraform/
-go-wait-times-service/terraform/.terraform.lock.hcl
-go-wait-times-service/terraform/terraform.tfstate*
-go-wait-times-service/terraform/*.tfstate
-go-wait-times-service/terraform/*.tfstate.*
+# Also ignore Terraform files in service subfolders
+go-services/*/terraform/secrets.tfvars
+go-services/*/terraform/.terraform/
+go-services/*/terraform/.terraform.lock.hcl
+go-services/*/terraform/terraform.tfstate*
+go-services/*/terraform/*.tfstate
+go-services/*/terraform/*.tfstate.*
 
 # service account credentials and API keys
-go-wait-times-service/keys/
+go-services/*/keys/
 *.json
 !package.json
 !tsconfig.json
@@ -82,12 +82,12 @@ go-wait-times-service/keys/
 *.crt
 
 # Go specific
-go-wait-times-service/tmp/
-go-wait-times-service/temp/
-go-wait-times-service/*.log
-go-wait-times-service/vendor/
-go-wait-times-service/go.work
-go-wait-times-service/go.work.sum
+go-services/*/tmp/
+go-services/*/temp/
+go-services/*/*.log
+go-services/*/vendor/
+go-services/*/go.work
+go-services/*/go.work.sum
 
 # Executables / build artifacts
 # ignore compiled windows binaries produced by local builds
