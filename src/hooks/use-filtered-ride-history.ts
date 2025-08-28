@@ -15,7 +15,9 @@ export function useFilteredRideHistory({
 }: UseFilteredRideHistory) {
     const selectedRideHistory = useMemo(() => {
         if (!selectedRide) return [];
-        return ridesHistory.filter(history => history.rideId === selectedRide.id);
+        const filtered = ridesHistory.filter(history => history.rideId === selectedRide.id);
+        // Sort by snapshotTime (UTC string) in ascending order (oldest first)
+        return filtered.sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
     }, [ridesHistory, selectedRide]);
 
     const filteredRidesHistory = useMemo(() => {
@@ -44,7 +46,8 @@ export function useFilteredRideHistory({
                 break;
         }
 
-        return selectedRideHistory.filter(item => new Date(item.snapshotTime) >= cutoffTime);
+        return selectedRideHistory.filter(item => new Date(item.snapshotTime) >= cutoffTime)
+            .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
     }, [selectedRideHistory, timeFilter]);
 
     return {

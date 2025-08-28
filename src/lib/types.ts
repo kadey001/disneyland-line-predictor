@@ -35,14 +35,6 @@ export type RideWaitTimeTrendMap = {
     [rideId: number]: RideWaitTimeTrends;
 }
 
-export type ExpectedWaitTimeData = {
-    all_rides: Ride[];
-    filtered_rides: Ride[];
-    sorted_rides: Ride[];
-    flat_rides_history: RideWaitTimeHistory;
-    sorted_ride_history: RideWaitTimeHistory;
-}
-
 export type RideType = 'ATTRACTION' | 'SHOW' | 'RESTAURANT';
 export type RideStatus = 'OPERATING' | 'CLOSED';
 
@@ -83,5 +75,45 @@ export type ParkData = {
     name: string;
     timezone: string;
     liveData: LiveRideData;
+}
+
+// API response types for external services
+export interface AttractionDataEntry {
+    id: number;
+    rideId: string;
+    externalId: string;
+    parkId: string;
+    entityType: string;
+    name: string;
+    status: string;
+    lastUpdated: string; // ISO date string
+    createdAt: string; // ISO date string
+    updatedAt: string; // ISO date string
+    operatingHours: string;
+    standbyWaitTime: number;
+    returnTimeState: string;
+    returnStart: string;
+    returnEnd: string | null;
+    forecast: string; // Array of JSON objects stringified
+}
+
+// New API response types for the updated wait-times API
+export interface LiveWaitTimeEntry {
+    rideId: string;
+    rideName: string;
+    waitTime: number | null;
+    status: string;
+    lastUpdated: string; // ISO date string
+}
+
+export interface RideHistoryEntry {
+    waitTime: number;
+    snapshotTime: string; // ISO date string
+}
+
+export interface WaitTimesResponse {
+    liveWaitTime: LiveWaitTimeEntry[];
+    rideNames: Record<string, string>;
+    groupedRidesHistory: Record<string, RideHistoryEntry[]>;
 }
 

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { config } from "@/lib/config";
 import { filterTodaysRideHistory } from "@/lib/utils";
 import { PARKS, THEME_PARKS_WIKI_API_BASE_URL } from "@/lib/constants";
-import type { ParkData, ExpectedWaitTimeData, RideWaitTimeHistory, LiveRideData } from "@/lib/types";
+import type { ParkData, WaitTimesResponse, RideWaitTimeHistory, LiveRideData } from "@/lib/types";
 import { fetchWithRetry } from "@/lib/fetch-with-retry";
 
 const getMainAttractions = async (): Promise<LiveRideData> => {
@@ -41,23 +41,43 @@ export const getWaitTimes = async () => {
         throw new Error(`Failed to fetch wait times: ${waitTimesData.status} ${waitTimesData.statusText}`);
     }
 
-    const { all_rides: allRides,
-        filtered_rides: filteredRides,
-        sorted_rides: sortedRides,
-        flat_rides_history: flatRidesHistory,
-        sorted_ride_history: sortedRideHistory
-    } = await waitTimesData.json() as ExpectedWaitTimeData;
+    const waitTimesResponse = await waitTimesData.json() as WaitTimesResponse;
 
-    if (!allRides || !filteredRides || !sortedRides || !flatRidesHistory || !sortedRideHistory) {
+    if (!waitTimesResponse.liveWaitTime || !waitTimesResponse.groupedRidesHistory) {
         notFound();
     }
 
+    // Transform liveWaitTime to Ride[] format
+    const allRides = waitTimesResponse.liveWaitTime.map(entry => ({
+        id: parseInt(entry.rideId) || 0,
+        name: entry.rideName,
+        is_open: entry.status === 'OPERATING',
+        wait_time: entry.waitTime || 0,
+        last_updated: entry.lastUpdated
+    }));
+
+    // Filter rides with valid wait times
+    const filteredRides = allRides.filter(ride => ride.wait_time > 0);
+
+    // Sort rides by wait time (descending)
+    const sortedRides = [...filteredRides].sort((a, b) => b.wait_time - a.wait_time);
+
+    // Transform groupedRidesHistory to RideWaitTimeHistory format
+    const flatRidesHistory: RideWaitTimeHistory = Object.entries(waitTimesResponse.groupedRidesHistory).flatMap(([rideId, historyEntries]) =>
+        historyEntries.map(entry => ({
+            rideId: parseInt(rideId) || 0,
+            rideName: waitTimesResponse.rideNames[rideId] || 'Unknown Ride',
+            waitTime: entry.waitTime,
+            snapshotTime: new Date(entry.snapshotTime)
+        }))
+    );
+
     // Filter out history to be only todays park data from open until closing (PST)
-    const filteredSortedRideHistory: RideWaitTimeHistory = filterTodaysRideHistory(sortedRideHistory);
+    const sortedRideHistory: RideWaitTimeHistory = filterTodaysRideHistory(flatRidesHistory);
 
     // Add any missing data that comes from the mainAttractions list
     mainAttractions.forEach(attraction => {
-        const historyEntry = filteredSortedRideHistory.findLast(entry => entry.rideName === attraction.name);
+        const historyEntry = sortedRideHistory.findLast(entry => entry.rideName === attraction.name);
         if (!historyEntry) return;
 
         // Convert both dates to Date objects for proper comparison
@@ -66,7 +86,7 @@ export const getWaitTimes = async () => {
 
         // If the history entry snapshot time is older than the attraction last update time, push a new entry to the history
         if (historySnapshotTime < attractionLastUpdated) {
-            filteredSortedRideHistory.push({
+            sortedRideHistory.push({
                 rideId: historyEntry.rideId,
                 rideName: attraction.name,
                 waitTime: attraction.queue?.STANDBY.waitTime ?? 0,
@@ -75,5 +95,5 @@ export const getWaitTimes = async () => {
         }
     });
 
-    return { allRides, filteredRides, sortedRides, flatRidesHistory, sortedRideHistory: filteredSortedRideHistory, mainAttractions };
+    return { allRides, filteredRides, sortedRides, flatRidesHistory, sortedRideHistory, mainAttractions };
 };
