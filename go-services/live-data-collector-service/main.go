@@ -23,6 +23,7 @@ func main() {
 			// Use fmt.Println since logger isn't initialized yet
 			fmt.Printf("Warning: No .env file found: %v\n", err)
 		}
+		fmt.Printf("Loaded environment variables from .env file\n")
 	}
 
 	// initialize default logger implementation

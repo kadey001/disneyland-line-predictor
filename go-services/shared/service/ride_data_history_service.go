@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go-services/shared"
 	"go-services/shared/models"
 	"go-services/shared/repository"
 	"net/http"
@@ -53,9 +54,19 @@ func (s *RideDataHistoryService) FetchAndStoreParkData(ctx context.Context, park
 			filteredLiveData = append(filteredLiveData, entry)
 		}
 	}
+
+	// Filter for only important rides based on our filtered attractions list
+	importantRides := make([]models.LiveRideDataEntry, 0, len(filteredLiveData))
+	for _, entry := range filteredLiveData {
+		if shared.IsRideFiltered(parkID, entry.ID) {
+			importantRides = append(importantRides, entry)
+		}
+	}
+
 	// Log filtered data for debugging
-	s.logger.Debugf("Filtered ride data for park %s -- to %+v entries", parkID, len(filteredLiveData))
-	parkData.LiveData = filteredLiveData
+	s.logger.Debugf("Filtered ride data for park %s -- attractions: %+v, important: %+v entries",
+		parkID, len(filteredLiveData), len(importantRides))
+	parkData.LiveData = importantRides
 
 	// Convert to database records
 	records := make([]*models.RideDataHistoryRecord, 0, len(parkData.LiveData))

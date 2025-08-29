@@ -26,29 +26,6 @@ type Land struct {
 	Rides []Ride `json:"rides"`
 }
 
-// RideWaitTimeSnapshot represents a database record for historical wait times (Legacy)
-type RideWaitTimeSnapshot struct {
-	ID           int       `json:"id" gorm:"primaryKey;autoIncrement;column:id"`
-	RideID       int64     `json:"rideId" gorm:"column:ride_id"`
-	RideName     string    `json:"rideName" gorm:"column:ride_name"`
-	IsOpen       bool      `json:"isOpen" gorm:"column:is_open"`
-	WaitTime     int64     `json:"waitTime" gorm:"column:wait_time"`
-	SnapshotTime time.Time `json:"snapshotTime" gorm:"column:snapshot_time"`
-}
-
-// TableName specifies the table name for GORM (Legacy)
-func (RideWaitTimeSnapshot) TableName() string {
-	return "ride_wait_time_snapshots"
-}
-
-// RideWaitTimeEntry represents a processed wait time entry (Legacy)
-type RideWaitTimeEntry struct {
-	RideID       int64     `json:"rideId"`
-	RideName     string    `json:"rideName"`
-	WaitTime     int64     `json:"waitTime"`
-	SnapshotTime time.Time `json:"snapshotTime"`
-}
-
 // --- NEW THEMEPARKS.WIKI API TYPES ---
 
 // RideType represents the type of ride/entity
@@ -95,16 +72,16 @@ type ForecastEntry struct {
 
 // LiveRideDataEntry represents a single ride's data from the API
 type LiveRideDataEntry struct {
-	ID              string            `json:"id"`
-	ParkID          string            `json:"parkId"`
-	ExternalID      string            `json:"externalId"`
-	EntityType      RideType          `json:"entityType"`
-	Name            string            `json:"name"`
-	Status          RideStatus        `json:"status"`
-	LastUpdated     time.Time         `json:"lastUpdated"`
-	OperatingHours  []OperatingHours  `json:"operatingHours,omitempty"`
-	Queue           *QueueInfo        `json:"queue,omitempty"`
-	Forecast        []ForecastEntry   `json:"forecast,omitempty"`
+	ID             string           `json:"id"`
+	ParkID         string           `json:"parkId"`
+	ExternalID     string           `json:"externalId"`
+	EntityType     RideType         `json:"entityType"`
+	Name           string           `json:"name"`
+	Status         RideStatus       `json:"status"`
+	LastUpdated    time.Time        `json:"lastUpdated"`
+	OperatingHours []OperatingHours `json:"operatingHours,omitempty"`
+	Queue          *QueueInfo       `json:"queue,omitempty"`
+	Forecast       []ForecastEntry  `json:"forecast,omitempty"`
 }
 
 // LiveRideData represents the array of ride data entries
@@ -121,27 +98,22 @@ type ParkData struct {
 
 // RideDataHistoryRecord represents the database record for ride data history
 type RideDataHistoryRecord struct {
-	ID              int64      `json:"id" gorm:"primaryKey;autoIncrement;column:id"`
-	RideID          string     `json:"rideId" gorm:"column:ride_id"`
-	ExternalID      string     `json:"externalId" gorm:"column:external_id"`
-	ParkID          string     `json:"parkId" gorm:"column:park_id"`
-	EntityType      string     `json:"entityType" gorm:"column:entity_type"`
-	Name            string     `json:"name" gorm:"column:name"`
-	Status          string     `json:"status" gorm:"column:status"`
-	LastUpdated     time.Time  `json:"lastUpdated" gorm:"column:last_updated"`
-	CreatedAt       time.Time  `json:"createdAt" gorm:"column:created_at"`
-	UpdatedAt       time.Time  `json:"updatedAt" gorm:"column:updated_at"`
-	OperatingHours  string     `json:"operatingHours" gorm:"column:operating_hours;type:jsonb"`
-	StandbyWaitTime *int       `json:"standbyWaitTime" gorm:"column:standby_wait_time"`
-	ReturnTimeState *string    `json:"returnTimeState" gorm:"column:return_time_state"`
-	ReturnStart     *time.Time `json:"returnStart" gorm:"column:return_start"`
-	ReturnEnd       *time.Time `json:"returnEnd" gorm:"column:return_end"`
-	Forecast        string     `json:"forecast" gorm:"column:forecast;type:jsonb"`
-}
-
-// TableName specifies the table name for GORM
-func (RideDataHistoryRecord) TableName() string {
-	return "ride_data_history"
+	ID              int64      `json:"id"`
+	RideID          string     `json:"rideId"`
+	ExternalID      string     `json:"externalId"`
+	ParkID          string     `json:"parkId"`
+	EntityType      string     `json:"entityType"`
+	Name            string     `json:"name"`
+	Status          string     `json:"status"`
+	LastUpdated     time.Time  `json:"lastUpdated"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	UpdatedAt       time.Time  `json:"updatedAt"`
+	OperatingHours  string     `json:"operatingHours"`
+	StandbyWaitTime *int       `json:"standbyWaitTime"`
+	ReturnTimeState *string    `json:"returnTimeState"`
+	ReturnStart     *time.Time `json:"returnStart"`
+	ReturnEnd       *time.Time `json:"returnEnd"`
+	Forecast        string     `json:"forecast"`
 }
 
 // ToRideDataHistoryRecord converts a LiveRideDataEntry to a database record
@@ -216,10 +188,8 @@ type RideWaitTimeTrendMap map[int64]RideWaitTimeTrends
 
 // WaitTimesResponse represents the complete response from the service
 type WaitTimesResponse struct {
-	AllRides          []Ride                      `json:"all_rides"`
-	FilteredRides     []Ride                      `json:"filtered_rides"`
-	SortedRides       []Ride                      `json:"sorted_rides"`
-	FlatRidesHistory  []RideWaitTimeEntry         `json:"flat_rides_history"`
-	SortedRideHistory []RideWaitTimeEntry         `json:"sorted_ride_history"`
-	RideDataHistory   []*RideDataHistoryRecord    `json:"ride_data_history"`
+	AllRides        []Ride                   `json:"all_rides"`
+	FilteredRides   []Ride                   `json:"filtered_rides"`
+	SortedRides     []Ride                   `json:"sorted_rides"`
+	RideDataHistory []*RideDataHistoryRecord `json:"ride_data_history"`
 }

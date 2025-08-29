@@ -45,9 +45,22 @@ type RideHistoryEntry struct {
 	SnapshotTime time.Time `json:"snapshotTime"`
 }
 
+// AttractionAtlasEntry represents a ride entry in the attraction atlas
+type AttractionAtlasEntry struct {
+	RideID   string `json:"rideId"`
+	RideName string `json:"rideName"`
+}
+
+// ParkAtlasEntry represents a park entry in the attraction atlas
+type ParkAtlasEntry struct {
+	ParkID   string                 `json:"parkId"`
+	ParkName string                 `json:"parkName"`
+	Rides    []AttractionAtlasEntry `json:"rides"`
+}
+
 // WaitTimesResponse represents the response structure with live and historical data
 type WaitTimesResponse struct {
 	LiveWaitTime        []LiveWaitTimeEntry           `json:"liveWaitTime"`
-	RideNames           map[string]string             `json:"rideNames"`
+	AttractionAtlas     []ParkAtlasEntry              `json:"attractionAtlas"`
 	GroupedRidesHistory map[string][]RideHistoryEntry `json:"groupedRidesHistory"`
 }

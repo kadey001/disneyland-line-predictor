@@ -1,17 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"go-services/shared/repository"
 	"go-services/shared/service"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"github.com/joho/godotenv"
 )
 
 var logger service.Logger
 
 func main() {
+	// Load environment variables from .env file only in development
+	env := os.Getenv("ENV")
+	if env == "" || strings.ToLower(env) == "development" {
+		if err := godotenv.Load("../.env"); err != nil {
+			// Use fmt.Println since logger isn't initialized yet
+			fmt.Printf("Warning: No .env file found: %v\n", err)
+		}
+		fmt.Printf("Loaded environment variables from .env file\n")
+	}
+
 	// initialize default logger implementation
 	logger = service.NewDefaultLogger()
 

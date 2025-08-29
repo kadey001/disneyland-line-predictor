@@ -67,11 +67,11 @@ func (r *RideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.
 		if err == pgx.ErrNoRows {
 			// New record - insert it
 			shouldInsert = true
-		} else if newTime.Sub(existingTime.UTC()) >= 5*time.Minute {
-			// Existing record found and new data is at least 5 minutes newer - insert new record
+		} else if newTime.Sub(existingTime.UTC()) >= 4*time.Minute {
+			// Existing record found and new data is at least 4 minutes newer - insert new record
 			shouldInsert = true
 		} else {
-			// Existing record is newer or same or less than 5 minutes newer - skip
+			// Existing record is newer or same or less than 4 minutes newer - skip
 			skipped++
 			continue
 		}

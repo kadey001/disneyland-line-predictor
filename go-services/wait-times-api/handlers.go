@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"go-services/shared"
 	"go-services/shared/repository"
 	"go-services/shared/response"
 	"log"
@@ -75,22 +76,25 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 
 		log.Printf("Retrieved %d ride data history records from the past window", len(rideDataHistory))
 
-		// Process all records to build history
+		// Process filtered records to build history
 		groupedRidesHistory := make(map[string][]RideHistoryEntry)
 
 		for _, record := range rideDataHistory {
-			// Convert to flat history format
-			waitTime := int64(0)
+			// Only process records for rides that are in our filtered list
+			if shared.IsRideFiltered(record.ParkID, record.RideID) {
+				// Convert to flat history format
+				waitTime := int64(0)
 
-			if record.StandbyWaitTime != nil {
-				waitTime = int64(*record.StandbyWaitTime)
-			}
+				if record.StandbyWaitTime != nil {
+					waitTime = int64(*record.StandbyWaitTime)
+				}
 
-			historyEntry := RideHistoryEntry{
-				WaitTime:     waitTime,
-				SnapshotTime: record.LastUpdated,
+				historyEntry := RideHistoryEntry{
+					WaitTime:     waitTime,
+					SnapshotTime: record.LastUpdated,
+				}
+				groupedRidesHistory[record.RideID] = append(groupedRidesHistory[record.RideID], historyEntry)
 			}
-			groupedRidesHistory[record.RideID] = append(groupedRidesHistory[record.RideID], historyEntry)
 		}
 
 		// Sort each ride's history by SnapshotTime descending (latest first)
@@ -100,23 +104,48 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 			})
 		}
 
-		// Build liveWaitTime list from the latest entries for all rides
+		// Build liveWaitTime list from the latest entries for filtered rides only
 		var liveWaitTime []LiveWaitTimeEntry
 		for _, record := range latestRideData {
-			liveEntry := LiveWaitTimeEntry{
-				RideID:      record.RideID,
-				RideName:    record.Name,
-				WaitTime:    record.StandbyWaitTime,
-				Status:      record.Status,
-				LastUpdated: record.LastUpdated,
+			// Only include rides that are in our filtered list
+			if shared.IsRideFiltered(record.ParkID, record.RideID) {
+				liveEntry := LiveWaitTimeEntry{
+					RideID:      record.RideID,
+					RideName:    record.Name,
+					WaitTime:    record.StandbyWaitTime,
+					Status:      record.Status,
+					LastUpdated: record.LastUpdated,
+				}
+				liveWaitTime = append(liveWaitTime, liveEntry)
 			}
-			liveWaitTime = append(liveWaitTime, liveEntry)
 		}
 
-		// Build ride name mapping from latest ride data
-		rideNames := make(map[string]string)
+		// Build attraction atlas from latest ride data (filtered rides only, grouped by park)
+		attractionAtlas := make([]ParkAtlasEntry, 0)
+		parkRidesMap := make(map[string][]AttractionAtlasEntry)
+
+		// Group rides by park
 		for _, record := range latestRideData {
-			rideNames[record.RideID] = record.Name
+			// Only include rides that are in our filtered list
+			if shared.IsRideFiltered(record.ParkID, record.RideID) {
+				entry := AttractionAtlasEntry{
+					RideID:   record.RideID,
+					RideName: record.Name,
+				}
+				parkRidesMap[record.ParkID] = append(parkRidesMap[record.ParkID], entry)
+			}
+		}
+
+		// Build park entries with park names
+		for parkID, rides := range parkRidesMap {
+			if parkInfo, exists := shared.ParkNames[parkID]; exists {
+				parkEntry := ParkAtlasEntry{
+					ParkID:   parkInfo.ID,
+					ParkName: parkInfo.Name,
+					Rides:    rides,
+				}
+				attractionAtlas = append(attractionAtlas, parkEntry)
+			}
 		}
 
 		// If ride_id provided, filter the history data only
@@ -131,7 +160,7 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 		// Create the response structure
 		waitTimesResponse := WaitTimesResponse{
 			LiveWaitTime:        liveWaitTime,
-			RideNames:           rideNames,
+			AttractionAtlas:     attractionAtlas,
 			GroupedRidesHistory: groupedRidesHistory,
 		}
 

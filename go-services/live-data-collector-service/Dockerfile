@@ -34,6 +34,9 @@ RUN apk --no-cache add ca-certificates tzdata && \
 # Switch to non-root user
 USER appuser
 
+# Set environment to production by default
+ENV ENV=production
+
 WORKDIR /home/appuser/
 
 # Copy the binary from builder stage

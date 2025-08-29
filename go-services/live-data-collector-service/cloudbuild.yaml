@@ -4,8 +4,7 @@ steps:
   args:
   - '-c'
   - |
-    cd go-services/live-data-collector-service
-    docker build -t $_IMAGE .
+    docker build -f live-data-collector-service/Dockerfile -t $_IMAGE .
     docker push $_IMAGE
 
 images:
@@ -14,3 +13,7 @@ images:
 options:
   machineType: 'E2_HIGHCPU_8'
   substitutionOption: 'ALLOW_LOOSE'
+  defaultLogsBucketBehavior: 'REGIONAL_USER_OWNED_BUCKET'
+
+# Force builds to run in us-west2
+location: 'us-west2'
