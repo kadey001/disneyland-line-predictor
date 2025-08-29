@@ -4,7 +4,7 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { GroupedRidesHistory, LiveRideDataEntry, LiveWaitTimeEntry, RideHistoryEntry, RideWaitTimeHistory } from "@/lib/types"
+import type { LiveWaitTimeEntry, RideHistoryEntry } from "@/lib/types"
 import { useMemo } from "react"
 import { formatDateToChartAxis } from "@/lib/utils"
 
@@ -22,12 +22,6 @@ interface WaitTimeChartProps {
 }
 
 export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: WaitTimeChartProps) {
-
-    // const transformedData = rideWaitTimeHistory.map((_ride) => ({
-    //     rideName: _ride.rideName,
-    //     waitTime: _ride.waitTime,
-    //     snapshotTime: _ride.snapshotTime,
-    // }));
     // Dot that is red or green based on status
     const statusDotColor = useMemo(() => {
         return selectedRide?.status === "OPERATING" ? "green" : "red";

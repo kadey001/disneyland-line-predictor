@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { GroupedRidesHistory, Ride, RideWaitTimeHistory } from "@/lib/types";
+import type { GroupedRidesHistory } from "@/lib/types";
 import type { TimeFilter } from "@/components/time-filter-selector";
 
 interface UseFilteredRideHistory {

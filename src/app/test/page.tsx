@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { WaitTimesResponse } from '@/lib/types';
 import WaitTimesClient from "@/components/wait-times-client";
 import DisneyLoader from '@/components/disney-loader';

@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { LiveWaitTimeEntry, Ride, RideWaitTimeTrends } from "@/lib/types"
+import type { LiveWaitTimeEntry, RideWaitTimeTrends } from "@/lib/types"
 import { formatDateToChartAxis } from "@/lib/utils"
 
 const chartConfig = {

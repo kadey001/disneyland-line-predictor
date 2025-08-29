@@ -2,7 +2,6 @@
 
 import type { AttractionAtlasEntry, LiveWaitTimeEntry, ParkAtlasEntry } from "@/lib/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { DISNEY_PARKS_ATLAS } from "@/lib/rides";
 import { SelectLabel } from "@radix-ui/react-select";
 import { useMemo } from "react";
 
@@ -14,8 +13,6 @@ interface RideSelectProps {
 }
 
 export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, liveWaitTime }: RideSelectProps) {
-    // const californiaAdventureRides = DISNEY_PARKS_ATLAS["Disney California Adventure Park"].rides;
-    // const disneylandRides = DISNEY_PARKS_ATLAS["Disneyland Park"].rides;
     const californiaAdventureRides = attractionAtlas?.find(park => park.parkName === "Disney California Adventure Park")?.rides || [];
     const disneylandRides = attractionAtlas?.find(park => park.parkName === "Disneyland Park")?.rides || [];
 
