@@ -63,7 +63,20 @@ This starts the Next.js app (port 3000), Go services (ports 8080/8081), and Post
 Create `.env.local`:
 ```env
 DATABASE_URL="postgresql://postgres:password@localhost:5432/disneyland?sslmode=disable"
+
+# Supabase Configuration (for real-time updates)
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key-here"
 ```
+
+### Supabase Setup for Real-time Updates
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Get your project URL and anon key from the project settings
+3. Enable real-time for the `ride_data_history` table in your Supabase dashboard
+4. Add the environment variables above to your `.env.local` file
+
+The app will automatically use real-time subscriptions when Supabase is configured, falling back to polling if not available.
 
 ## Database Schema
 
