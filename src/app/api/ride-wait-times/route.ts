@@ -9,8 +9,14 @@ export async function GET(request: NextRequest) {
     cache.stats();
     console.log('Received request for ride wait times');
     const url = process.env.WAIT_TIMES_API_URL;
+    console.log('WAIT_TIMES_API_URL:', url);
+
     if (!url) {
-        return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
+        console.error('WAIT_TIMES_API_URL environment variable is not set');
+        return NextResponse.json({
+            error: 'API URL not configured',
+            details: 'WAIT_TIMES_API_URL environment variable is missing'
+        }, { status: 500 });
     }
 
     // Check for cache stats request
@@ -59,15 +65,33 @@ export async function GET(request: NextRequest) {
             apiUrl.searchParams.set('ride_id', rideId);
         }
 
+        console.log('Making request to:', apiUrl.toString());
+
+        // Add timeout for Vercel serverless functions
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
         const response = await fetch(apiUrl.toString(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
+                'User-Agent': 'Disneyland-Line-Predictor/1.0',
             },
             cache: 'no-cache',
+            signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
+
+        console.log('External API response status:', response.status);
+
+        if (!response.ok) {
+            throw new Error(`External API returned ${response.status}: ${response.statusText}`);
+        }
+
         const data: WaitTimesResponse = await response.json();
+        console.log('Successfully received data from external API');
 
         // Cache the response
         cache.set(cacheKey, data);
@@ -86,7 +110,29 @@ export async function GET(request: NextRequest) {
                 'X-Data-Source': 'api',
             },
         });
-    } catch {
-        return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+    } catch (error) {
+        console.error('API fetch error:', error);
+
+        let errorMessage = 'Failed to fetch data';
+        let statusCode = 500;
+
+        if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timeout - external API took too long to respond';
+                statusCode = 504;
+            } else if (error.message.includes('fetch')) {
+                errorMessage = 'Network error - unable to connect to external API';
+                statusCode = 502;
+            } else {
+                errorMessage = error.message;
+            }
+        }
+
+        return NextResponse.json({
+            error: errorMessage,
+            details: process.env.NODE_ENV === 'development' ? error?.toString() : undefined,
+            timestamp: new Date().toISOString(),
+            apiUrl: process.env.NODE_ENV === 'development' ? url : undefined
+        }, { status: statusCode });
     }
 }
