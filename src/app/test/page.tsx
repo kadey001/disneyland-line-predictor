@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react';
-import { WaitTimesResponse, RideWaitTimeHistory } from '@/lib/types';
+import { useState, useEffect, useMemo } from 'react';
+import { WaitTimesResponse } from '@/lib/types';
 import WaitTimesClient from "@/components/wait-times-client";
 import DisneyLoader from '@/components/disney-loader';
 
@@ -15,9 +15,6 @@ export default function TestPage() {
             const response = await fetch(url, {
                 method: 'GET',
                 cache: 'no-cache',
-                next: {
-                    revalidate: 62
-                }
             });
 
             if (!response.ok) {
@@ -25,6 +22,7 @@ export default function TestPage() {
             }
 
             const responseData = await response.json() as WaitTimesResponse & { _cachedAt?: string; _fromCache?: boolean };
+            console.log(responseData.groupedRidesHistory);
 
             console.log(`Data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
             console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
@@ -49,28 +47,18 @@ export default function TestPage() {
         return () => clearInterval(interval);
     }, []);
 
-    if (error) {
-        return (
-            <div>
-                <h1>Test Page</h1>
-                <p>Error: {error}</p>
-            </div>
-        );
-    }
-
-    if (!data) {
-        return (
-            <div>
-                <DisneyLoader />
-            </div>
-        );
-    }
-
-    return (
+    if (error) return (
         <div>
-            <WaitTimesClient
-                data={data}
-            />
+            <h1>Test Page</h1>
+            <p>Error: {error}</p>
         </div>
     );
+
+    if (!data) return (
+        <div>
+            <DisneyLoader />
+        </div>
+    );
+
+    return <WaitTimesClient data={data} />;
 }

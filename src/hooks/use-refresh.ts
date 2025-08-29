@@ -1,13 +1,15 @@
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
-export function useRefresh(interval: number) {
-    const router = useRouter();
+interface UseRefreshProps {
+    refreshFn: () => void;
+    interval: number;
+}
 
+export function useRefresh({ interval, refreshFn }: UseRefreshProps) {
     useEffect(() => {
-        router.refresh()
+        refreshFn();
         const intervalId = setInterval(() => {
-            router.refresh();
+            refreshFn();
         }, interval);
 
         return () => clearInterval(intervalId);

@@ -1,24 +1,24 @@
 import { useMemo } from "react";
-import type { Ride, RideWaitTimeHistory } from "@/lib/types";
+import type { GroupedRidesHistory, Ride, RideWaitTimeHistory } from "@/lib/types";
 import type { TimeFilter } from "@/components/time-filter-selector";
 
 interface UseFilteredRideHistory {
-    ridesHistory: RideWaitTimeHistory;
+    ridesHistory: GroupedRidesHistory;
     timeFilter: TimeFilter;
-    selectedRide?: Ride;
+    selectedRideId: string | null;
 }
 
 export function useFilteredRideHistory({
     ridesHistory,
     timeFilter,
-    selectedRide
+    selectedRideId
 }: UseFilteredRideHistory) {
     const selectedRideHistory = useMemo(() => {
-        if (!selectedRide) return [];
-        const filtered = ridesHistory.filter(history => history.rideId === selectedRide.id);
+        if (!selectedRideId) return [];
+        const filtered = ridesHistory[selectedRideId] || [];
         // Sort by snapshotTime (UTC string) in ascending order (oldest first)
         return filtered.sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
-    }, [ridesHistory, selectedRide]);
+    }, [ridesHistory, selectedRideId]);
 
     const filteredRidesHistory = useMemo(() => {
         if (timeFilter === 'full-day') {
@@ -50,8 +50,5 @@ export function useFilteredRideHistory({
             .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
     }, [selectedRideHistory, timeFilter]);
 
-    return {
-        selectedRideHistory,
-        filteredRidesHistory
-    };
+    return { filteredRidesHistory };
 }

@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TTLCache } from '@/lib/ttl-cache';
 import { WaitTimesResponse } from '@/lib/types';
 
-const TTL_CACHE_DURATION = 1 * 60 * 1000; // 1 minute
+const TTL_CACHE_DURATION = 30 * 1000; // 30 seconds
 const cache = new TTLCache<WaitTimesResponse>(TTL_CACHE_DURATION);
 
 export async function GET(request: NextRequest) {
     cache.stats();
     console.log('Received request for ride wait times');
     const url = process.env.WAIT_TIMES_API_URL;
-    // const url = 'http://localhost:8080';
     if (!url) {
         return NextResponse.json({ error: 'API URL not configured' }, { status: 500 });
     }
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             cache: stats,
             ttl: TTL_CACHE_DURATION,
-            ttlFormatted: '1 minutes'
+            ttlFormatted: '45 seconds'
         });
     }
 
@@ -46,7 +45,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(responseData, {
             status: 200,
             headers: {
-                'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=240',
+                'Cache-Control': 'public, max-age=45, s-maxage=45, stale-while-revalidate=15',
                 'X-Data-Source': 'cache',
             },
         });
@@ -66,6 +65,7 @@ export async function GET(request: NextRequest) {
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
             },
+            cache: 'no-cache',
         });
         const data: WaitTimesResponse = await response.json();
 
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(responseData, {
             status: response.status,
             headers: {
-                'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=240',
+                'Cache-Control': 'public, max-age=45, s-maxage=45, stale-while-revalidate=15',
                 'X-Data-Source': 'api',
             },
         });

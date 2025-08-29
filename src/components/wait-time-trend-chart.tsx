@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { Ride, RideWaitTimeTrends } from "@/lib/types"
+import type { LiveWaitTimeEntry, Ride, RideWaitTimeTrends } from "@/lib/types"
 import { formatDateToChartAxis } from "@/lib/utils"
 
 const chartConfig = {
@@ -15,7 +15,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface WaitTimeTrendChartProps {
-    selectedRide?: Ride;
+    selectedRide: LiveWaitTimeEntry | null;
     rideWaitTimeTrend?: RideWaitTimeTrends
 }
 
@@ -26,7 +26,7 @@ export default function WaitTimeTrendChart({ rideWaitTimeTrend, selectedRide }: 
         <Card>
             <CardHeader>
                 <CardTitle>
-                    Wait Time Trend For {selectedRide.name}
+                    Wait Time Trend For {selectedRide.rideName}
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0 md:p-6">

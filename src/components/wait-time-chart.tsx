@@ -4,7 +4,7 @@ import { Bar, BarChart, XAxis, YAxis } from "recharts"
 
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import type { LiveRideDataEntry, RideWaitTimeHistory } from "@/lib/types"
+import type { GroupedRidesHistory, LiveRideDataEntry, LiveWaitTimeEntry, RideHistoryEntry, RideWaitTimeHistory } from "@/lib/types"
 import { useMemo } from "react"
 import { formatDateToChartAxis } from "@/lib/utils"
 
@@ -17,27 +17,36 @@ const chartConfig = {
 } satisfies ChartConfig
 
 interface WaitTimeChartProps {
-    rideWaitTimeHistory: RideWaitTimeHistory
-    selectedRide?: LiveRideDataEntry
+    rideWaitTimeHistory: RideHistoryEntry[];
+    selectedRide: LiveWaitTimeEntry | null;
 }
 
 export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: WaitTimeChartProps) {
 
-    const transformedData = rideWaitTimeHistory.map((_ride) => ({
-        rideName: _ride.rideName,
-        waitTime: _ride.waitTime,
-        snapshotTime: _ride.snapshotTime,
-    }));
+    // const transformedData = rideWaitTimeHistory.map((_ride) => ({
+    //     rideName: _ride.rideName,
+    //     waitTime: _ride.waitTime,
+    //     snapshotTime: _ride.snapshotTime,
+    // }));
     // Dot that is red or green based on status
     const statusDotColor = useMemo(() => {
         return selectedRide?.status === "OPERATING" ? "green" : "red";
     }, [selectedRide]);
 
+    const transformedData = useMemo(() => {
+        if (!rideWaitTimeHistory || !selectedRide) return [];
+        return rideWaitTimeHistory.map((_ride) => ({
+            rideName: selectedRide.rideName,
+            waitTime: _ride.waitTime,
+            snapshotTime: _ride.snapshotTime,
+        }));
+    }, [rideWaitTimeHistory, selectedRide]);
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>
-                    Ride: {selectedRide?.name}
+                    Ride: {selectedRide?.rideName}
                     <br />
                     Status: {selectedRide?.status === "OPERATING" ? "Open" : "Closed"}<span className={`inline-block w-2 h-2 rounded-full ml-2`} style={{ backgroundColor: statusDotColor }} />
                 </CardTitle>

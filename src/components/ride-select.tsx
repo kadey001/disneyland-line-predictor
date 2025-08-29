@@ -1,31 +1,32 @@
 "use client";
 
-import type { LiveRideData, LiveRideDataEntry } from "@/lib/types";
+import type { AttractionAtlasEntry, LiveWaitTimeEntry, ParkAtlasEntry } from "@/lib/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { DISNEY_PARKS_ATLAS } from "@/lib/rides";
 import { SelectLabel } from "@radix-ui/react-select";
+import { useMemo } from "react";
 
 interface RideSelectProps {
-    filteredAttractions: LiveRideData;
-    rideNames: Record<string, string>;
-    selectedRideId?: string;
+    selectedRideId: string;
     onSelect: (rideId: string) => void;
+    attractionAtlas: ParkAtlasEntry[];
+    liveWaitTime: LiveWaitTimeEntry[];
 }
 
-export default function RideSelect({ filteredAttractions, rideNames, selectedRideId, onSelect }: RideSelectProps) {
-    const selectedRideName = selectedRideId ? rideNames[selectedRideId] : undefined;
-
-    const californiaAdventureRides = DISNEY_PARKS_ATLAS["Disney California Adventure Park"].rides;
-    const disneylandRides = DISNEY_PARKS_ATLAS["Disneyland Park"].rides;
+export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, liveWaitTime }: RideSelectProps) {
+    // const californiaAdventureRides = DISNEY_PARKS_ATLAS["Disney California Adventure Park"].rides;
+    // const disneylandRides = DISNEY_PARKS_ATLAS["Disneyland Park"].rides;
+    const californiaAdventureRides = attractionAtlas?.find(park => park.parkName === "Disney California Adventure Park")?.rides || [];
+    const disneylandRides = attractionAtlas?.find(park => park.parkName === "Disneyland Park")?.rides || [];
 
     // Helper function to merge status information from filteredAttractions
-    const mergeRideStatus = (parkRides: typeof disneylandRides) => {
-        return parkRides.map(ride => {
-            const liveData = filteredAttractions.find(attraction => attraction.id === ride.id.toString());
+    const mergeRideStatus = (attractionAtlas: AttractionAtlasEntry[]) => {
+        return attractionAtlas.map(atlasEntry => {
+            const liveData = liveWaitTime.find(entry => entry.rideId === atlasEntry.rideId);
             return {
-                ...ride,
+                ...atlasEntry,
                 status: liveData?.status || 'UNKNOWN',
-                waitTime: liveData?.queue?.STANDBY?.waitTime
+                waitTime: liveData?.waitTime || null
             };
         });
     };
@@ -33,59 +34,61 @@ export default function RideSelect({ filteredAttractions, rideNames, selectedRid
     const disneylandRidesWithStatus = mergeRideStatus(disneylandRides);
     const californiaAdventureRidesWithStatus = mergeRideStatus(californiaAdventureRides);
 
-    const isRideOperating = (status: string) => status === "OPERATING";
+    const isRideOperating = (status?: string) => status === "OPERATING";
 
+    const attractionName = useMemo(() => {
+        // find the ride name in the atlas if there is a selectedRideId
+        if (selectedRideId) {
+            for (const park of attractionAtlas) {
+                const attraction = park.rides.find(ride => ride.rideId === selectedRideId);
+                if (attraction) {
+                    return attraction.rideName;
+                }
+            }
+        }
+        return null;
+    }, [selectedRideId, attractionAtlas]);
+
+    const selectedLiveData = useMemo(() => {
+        return liveWaitTime.find(ride => ride.rideId === selectedRideId);
+    }, [selectedRideId, liveWaitTime]);
 
     return (
         <div className="bg-background border border-gray-200 rounded-lg shadow-lg mt-2">
             <Select onValueChange={(value) => onSelect(value)}>
                 <SelectTrigger aria-label="Select a Disney ride" className="w-[100%]">
-                    <SelectValue placeholder={selectedRideName ? (
+                    <SelectValue placeholder={attractionName ? (
                         <div className="flex items-center gap-2 text-primary">
-                            {selectedRideName}
-                            {(() => {
-                                const selectedLiveData = filteredAttractions.find(attraction => attraction.name === selectedRideName);
-                                return selectedLiveData ? (
-                                    <>
-                                        <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(selectedLiveData.status) ? "green" : "red" }} />
-                                        {selectedLiveData.queue?.STANDBY.waitTime ? `${selectedLiveData.queue.STANDBY.waitTime} mins` : "N/A"}
-                                    </>
-                                ) : null;
-                            })()}
+                            {attractionName}
+                            <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(selectedLiveData?.status) ? "green" : "red" }} />
+                            {selectedLiveData?.waitTime ? `${selectedLiveData.waitTime} mins` : "N/A"}
                         </div>
                     ) : "Select a ride"} />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        {/* {Object.entries(rideNames).map(([rideId, rideName]) => (
-                            <SelectItem key={rideId} value={rideId} className="flex items-center justify-between gap-2 text-primary">
-                                {rideName}
+                        <SelectLabel>Disneyland Park</SelectLabel>
+                        {disneylandRidesWithStatus.map((ride) => (
+                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary">
+                                <div className="flex items-center gap-2">
+                                    {ride.rideName}
+                                    <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
+                                    {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
+                                </div>
                             </SelectItem>
-                        ))} */}
-                        <SelectGroup>
-                            <SelectLabel>Disneyland Park</SelectLabel>
-                            {disneylandRidesWithStatus.map((ride) => (
-                                <SelectItem key={ride.id} value={ride.id.toString()} className="flex items-center justify-between gap-2 text-primary">
-                                    <div className="flex items-center gap-2">
-                                        {ride.name}
-                                        <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                        {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                        <SelectGroup>
-                            <SelectLabel>Disney California Adventure Park</SelectLabel>
-                            {californiaAdventureRidesWithStatus.map((ride) => (
-                                <SelectItem key={ride.id} value={ride.id.toString()} className="flex items-center justify-between gap-2 text-primary">
-                                    <div className="flex items-center gap-2">
-                                        {ride.name}
-                                        <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                        {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
-                                    </div>
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
+                        ))}
+                    </SelectGroup>
+                    <SelectGroup>
+                        <SelectLabel>Disney California Adventure Park</SelectLabel>
+                        {californiaAdventureRidesWithStatus.map((ride) => (
+                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary">
+                                <div className="flex items-center gap-2">
+                                    {ride.rideName}
+                                    <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
+                                    {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
+                                </div>
+                            </SelectItem>
+                        ))}
                     </SelectGroup>
                 </SelectContent>
             </Select>

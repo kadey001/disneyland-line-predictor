@@ -88,7 +88,6 @@ export interface AttractionDataEntry {
     status: string;
     lastUpdated: string; // ISO date string
     createdAt: string; // ISO date string
-    updatedAt: string; // ISO date string
     operatingHours: string;
     standbyWaitTime: number;
     returnTimeState: string;
@@ -111,9 +110,22 @@ export interface RideHistoryEntry {
     snapshotTime: string; // ISO date string
 }
 
-export interface WaitTimesResponse {
-    liveWaitTime: LiveWaitTimeEntry[];
-    rideNames: Record<string, string>;
-    groupedRidesHistory: Record<string, RideHistoryEntry[]>;
+// New attraction atlas types
+export interface AttractionAtlasEntry {
+    rideId: string;
+    rideName: string;
 }
 
+export interface ParkAtlasEntry {
+    parkId: string;
+    parkName: string;
+    rides: AttractionAtlasEntry[];
+}
+
+export type GroupedRidesHistory = Record<string, RideHistoryEntry[]>;
+
+export interface WaitTimesResponse {
+    liveWaitTime: LiveWaitTimeEntry[];
+    attractionAtlas: ParkAtlasEntry[];
+    groupedRidesHistory: GroupedRidesHistory;
+}

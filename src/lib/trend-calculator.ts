@@ -1,8 +1,7 @@
-import { useMemo } from "react";
-import type { RideWaitTimeEntry, RideWaitTimeHistory, RideWaitTimeTrends } from "./types";
+import type { RideHistoryEntry, RideWaitTimeTrends } from "./types";
 
 export function calculateWaitTimeTrends(
-    history: RideWaitTimeEntry[]
+    history: RideHistoryEntry[]
 ): { trend: number; startTime: Date; endTime: Date }[] {
     if (!history || history.length < 2) return [];
 
@@ -20,51 +19,9 @@ export function calculateWaitTimeTrends(
         const curr = filteredHistory[i];
         trends.push({
             trend: curr.waitTime - prev.waitTime,
-            startTime: prev.snapshotTime,
-            endTime: curr.snapshotTime,
+            startTime: new Date(prev.snapshotTime),
+            endTime: new Date(curr.snapshotTime),
         });
     }
     return trends;
 }
-
-interface CalculateTrendProps {
-    waitTimeHistory: RideWaitTimeHistory;
-    rideId?: number;
-}
-
-// Function takes in RideWaitTimeHistory and calculates the trend of a selected ride
-export const calculateTrend = ({ waitTimeHistory, rideId }: CalculateTrendProps): RideWaitTimeTrends | null => {
-    if (!rideId) return null;
-
-    const rideHistory = waitTimeHistory.filter(history => history.rideId === rideId);
-
-    // Calculate the trend based on the ride's wait time history
-    const trends = calculateWaitTimeTrends(rideHistory);
-
-    // TODO: Cache the trends so later we can just append to it rather than having to calculate it all over again
-
-    return trends;
-};
-
-// Export memoized version of calculateTrend
-export const useMemoizedTrend = (props: CalculateTrendProps) => {
-    return useMemo(() => calculateTrend(props), [props]);
-};
-
-interface CalculateRideWaitTimeTrendProps {
-    waitTimeHistory: RideWaitTimeHistory;
-    rideName?: string;
-}
-
-export const calculateRideWaitTimeTrend = ({ waitTimeHistory, rideName }: CalculateRideWaitTimeTrendProps) => {
-    if (!rideName) return null;
-
-    const rideHistory = waitTimeHistory.filter(history => history.rideName === rideName);
-
-    // Calculate the trend based on the ride's wait time history
-    const trends = calculateWaitTimeTrends(rideHistory);
-
-    // TODO: Cache the trends so later we can just append to it rather than having to calculate it all over again
-
-    return trends;
-};

@@ -1,58 +1,49 @@
+"use client"
+
+import { useState, useEffect, useMemo } from 'react';
+import { WaitTimesResponse } from '@/lib/types';
 import WaitTimesClient from "@/components/wait-times-client";
-import { getWaitTimes } from "./actions";
-import { logNetworkError, createRequestContext } from "@/lib/error-logger";
-import type { WaitTimesResponse } from "@/lib/types";
+import DisneyLoader from '@/components/disney-loader';
+import { useRefresh } from '@/hooks/use-refresh';
 
-// Force dynamic rendering to prevent build-time API calls
-export const dynamic = 'force-dynamic';
+export default function WaitTimesPage() {
+    const [data, setData] = useState<WaitTimesResponse | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-export default async function WaitTimesPage() {
-    try {
-        const { sortedRides, sortedRideHistory } = await getWaitTimes();
-
-        // Reconstruct the WaitTimesResponse format
-        const rideNames: Record<string, string> = {};
-        sortedRides.forEach(ride => {
-            rideNames[ride.id.toString()] = ride.name;
-        });
-
-        const groupedRidesHistory: Record<string, { waitTime: number; snapshotTime: string }[]> = {};
-        sortedRideHistory.forEach(entry => {
-            const rideId = entry.rideId.toString();
-            if (!groupedRidesHistory[rideId]) {
-                groupedRidesHistory[rideId] = [];
-            }
-            groupedRidesHistory[rideId].push({
-                waitTime: entry.waitTime,
-                snapshotTime: entry.snapshotTime.toISOString()
+    const fetchData = async (rideId?: string) => {
+        try {
+            const url = rideId ? `/api/ride-wait-times?ride_id=${rideId}` : '/api/ride-wait-times';
+            const response = await fetch(url, {
+                method: 'GET',
+                cache: 'default',
+                next: { revalidate: 20 } // Revalidate every 20 seconds
             });
-        });
 
-        const data: WaitTimesResponse = {
-            liveWaitTime: sortedRides.map(ride => ({
-                rideId: ride.id.toString(),
-                rideName: ride.name,
-                waitTime: ride.wait_time,
-                status: ride.is_open ? 'OPERATING' : 'CLOSED',
-                lastUpdated: ride.last_updated
-            })),
-            rideNames,
-            groupedRidesHistory
-        };
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        return <WaitTimesClient data={data} />;
-    } catch (error) {
-        // Log the error for monitoring
-        logNetworkError('Failed to load wait times data', error, createRequestContext());
+            const responseData = await response.json() as WaitTimesResponse & { _cachedAt?: string; _fromCache?: boolean };
 
-        // Return a user-friendly error message
-        return (
-            <div className="w-full h-full md:container md:mx-auto p-6">
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                    <strong className="font-bold">Unable to load wait times</strong>
-                    <span className="block sm:inline"> - Please try refreshing the page. The Disney parks data service may be temporarily unavailable.</span>
-                </div>
-            </div>
-        );
-    }
+            console.log(`Data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
+            console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
+
+            setData(responseData);
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to fetch ride data');
+        }
+    };
+
+    const REFRESH_INTERVAL = 30000; // 30 seconds
+    useRefresh({
+        interval: REFRESH_INTERVAL,
+        refreshFn: fetchData
+    });
+
+    if (error) throw new Error(error);
+
+    if (!data) return <DisneyLoader />;
+
+    return <WaitTimesClient data={data} />;
 }
