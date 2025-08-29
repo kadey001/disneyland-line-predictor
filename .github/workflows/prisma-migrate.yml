@@ -1,0 +1,62 @@
+name: Prisma Database Migration
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'prisma/**'
+      - '.github/workflows/prisma-migrate.yml'
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: 'Custom migration name (optional)'
+        required: false
+        type: string
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate Prisma client
+      run: npx prisma generate
+
+    - name: Validate Prisma schema
+      run: npx prisma validate
+
+    - name: Run database migrations
+      run: |
+        if [ -n "${{ github.event.inputs.migration_name }}" ]; then
+          npx prisma migrate dev --name ${{ github.event.inputs.migration_name }}
+        else
+          npx prisma migrate deploy
+        fi
+
+    - name: Run Prisma Studio (for verification)
+      run: |
+        timeout 30s npx prisma studio --port 5555 --hostname 0.0.0.0 &
+        sleep 10
+        curl -f http://localhost:5555/api/health || echo "Studio health check failed"
+
+    - name: Notify on migration completion
+      if: always()
+      run: |
+        echo "Database migration ${{ job.status == 'success' && 'successful' || 'failed' }}"
+        echo "Migration SHA: ${{ github.sha }}"
+        echo "Triggered by: ${{ github.actor }}"

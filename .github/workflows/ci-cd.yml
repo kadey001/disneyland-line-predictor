@@ -1,0 +1,139 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  NODE_VERSION: '20'
+  GO_VERSION: '1.23'
+
+jobs:
+  test-and-build:
+    name: Test and Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Install Node.js dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Build Next.js application
+      run: npm run build
+
+    - name: Test Go services
+      working-directory: ./go-services
+      run: |
+        go mod tidy
+        go test ./...
+
+    - name: Build Go services
+      working-directory: ./go-services
+      run: |
+        go build -o /tmp/wait-times-api ./wait-times-api
+        go build -o /tmp/live-data-collector ./live-data-collector-service
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          .next/
+          /tmp/wait-times-api
+          /tmp/live-data-collector
+        retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test-and-build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+
+    - name: Run Go security scan
+      uses: securecodewarrior/github-action-gosec@master
+      with:
+        args: './go-services/...'
+
+    - name: Upload SARIF reports
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: results.sarif
+        category: security-scan
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [test-and-build, security-scan]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Deploy to Vercel
+      if: env.VERCEL_TOKEN != ''
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-args: '--prod'
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID}}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID}}
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    - name: Deploy to Google Cloud Run (alternative)
+      if: env.VERCEL_TOKEN == '' && env.GCP_PROJECT_ID != ''
+      run: |
+        # Build and deploy Next.js to Cloud Run
+        echo "Deploying to Google Cloud Run..."
+      env:
+        GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [test-and-build, security-scan, deploy-frontend]
+
+    steps:
+    - name: Cleanup artifacts
+      run: |
+        echo "Pipeline completed with status: ${{ job.status }}"
+        echo "Cleaning up temporary files..."

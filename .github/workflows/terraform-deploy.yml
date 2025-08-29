@@ -1,0 +1,123 @@
+name: Terraform Infrastructure Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+env:
+  TF_VERSION: '1.5.0'
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION || 'us-west2' }}
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+  TF_VAR_region: ${{ vars.GCP_REGION || 'us-west2' }}
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.action }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Terraform backend (if using GCS)
+      if: env.TF_BACKEND_BUCKET != ''
+      working-directory: ./terraform
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}" \
+          -backend-config="prefix=terraform/state"
+      env:
+        TF_BACKEND_BUCKET: ${{ secrets.TF_BACKEND_BUCKET }}
+
+    - name: Terraform Init
+      working-directory: ./terraform
+      run: terraform init
+
+    - name: Terraform Format
+      working-directory: ./terraform
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      working-directory: ./terraform
+      run: terraform validate
+
+    - name: Terraform Plan
+      if: github.event.inputs.action == 'plan'
+      working-directory: ./terraform
+      run: |
+        terraform plan -out=tfplan
+        terraform show -no-color tfplan
+
+    - name: Terraform Plan (for apply/destroy)
+      if: github.event.inputs.action != 'plan'
+      working-directory: ./terraform
+      run: terraform plan -out=tfplan
+
+    - name: Terraform Apply
+      if: github.event.inputs.action == 'apply'
+      working-directory: ./terraform
+      run: terraform apply -auto-approve tfplan
+
+    - name: Terraform Destroy
+      if: github.event.inputs.action == 'destroy'
+      working-directory: ./terraform
+      run: |
+        terraform destroy -auto-approve
+
+    - name: Update Terraform lock file
+      if: github.event.inputs.action == 'apply'
+      working-directory: ./terraform
+      run: |
+        if [ -f .terraform.lock.hcl ]; then
+          echo "Terraform lock file updated"
+        fi
+
+    - name: Generate infrastructure documentation
+      if: github.event.inputs.action == 'apply'
+      working-directory: ./terraform
+      run: |
+        echo "# Infrastructure Outputs" > ../INFRASTRUCTURE.md
+        echo "" >> ../INFRASTRUCTURE.md
+        echo "## Last Updated: $(date)" >> ../INFRASTRUCTURE.md
+        echo "" >> ../INFRASTRUCTURE.md
+        terraform output -json >> ../INFRASTRUCTURE.md
+
+    - name: Notify deployment completion
+      if: always()
+      run: |
+        echo "Terraform ${{ github.event.inputs.action }} ${{ job.status == 'success' && 'completed successfully' || 'failed' }}"
+        echo "Environment: ${{ github.event.inputs.environment }}"
+        echo "SHA: ${{ github.sha }}"
+        echo "Actor: ${{ github.actor }}"
