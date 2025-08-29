@@ -1,8 +1,5 @@
 # Main Terraform configuration for Disney Wait Times services
-# 
-# This configuration deploys both services:
-# 1. Wait Times API - serves historical data and analytics
-# 2. Live Data Collector Service - collects real-time data from themeparks.wiki API
+# Deploys Wait Times API and Live Data Collector services to Cloud Run
 
 # Enable required APIs
 resource "google_project_service" "cloud_run" {
@@ -99,7 +96,7 @@ resource "google_cloud_run_v2_service" "wait_times_api" {
     service_account = google_service_account.cloud_run_sa.email
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/wait-times-api:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/wait-times-api:${var.wait_times_api_image_tag}"
 
       ports {
         container_port = 8080
@@ -117,15 +114,18 @@ resource "google_cloud_run_v2_service" "wait_times_api" {
 
       resources {
         limits = {
-          cpu    = "1"
-          memory = "512Mi"
+          cpu    = "0.5"
+          memory = "256Mi"
         }
+        cpu_idle = true
       }
     }
 
+    timeout = "300s"
+
     scaling {
-      min_instance_count = 1
-      max_instance_count = 3
+      min_instance_count = 0
+      max_instance_count = 2
     }
   }
 
@@ -150,7 +150,7 @@ resource "google_cloud_run_v2_service" "live_data_collector" {
     service_account = google_service_account.cloud_run_sa.email
 
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/live-data-collector-service:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/live-data-collector-service:${var.live_data_collector_image_tag}"
 
       ports {
         container_port = 8080
@@ -168,15 +168,18 @@ resource "google_cloud_run_v2_service" "live_data_collector" {
 
       resources {
         limits = {
-          cpu    = "1"
-          memory = "512Mi"
+          cpu    = "0.5"
+          memory = "256Mi"
         }
+        cpu_idle = true
       }
     }
 
+    timeout = "300s"
+
     scaling {
-      min_instance_count = 1
-      max_instance_count = 2
+      min_instance_count = 0
+      max_instance_count = 1
     }
   }
 
@@ -260,61 +263,5 @@ resource "google_cloud_scheduler_job" "data_collection_job" {
     google_project_service.cloud_scheduler,
     google_service_account.scheduler_sa,
     google_cloud_run_v2_service.live_data_collector
-  ]
-}
-
-# Create Cloud Build trigger for live-data-collector-service
-resource "google_cloudbuild_trigger" "live_data_collector_build" {
-  name = "live-data-collector-service-build"
-
-  github {
-    owner = var.github_owner
-    name  = var.github_repo
-    push {
-      branch = "^master$"
-    }
-  }
-
-  filename = "go-services/live-data-collector-service/cloudbuild.yaml"
-
-  included_files = [
-    "go-services/live-data-collector-service/**",
-  ]
-
-  substitutions = {
-    _IMAGE = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/live-data-collector-service:latest"
-  }
-
-  depends_on = [
-    google_project_service.cloud_build,
-    google_artifact_registry_repository.wait_times_repo,
-  ]
-}
-
-# Create Cloud Build trigger for wait-times-api
-resource "google_cloudbuild_trigger" "wait_times_api_build" {
-  name = "wait-times-api-build"
-
-  github {
-    owner = var.github_owner
-    name  = var.github_repo
-    push {
-      branch = "^master$"
-    }
-  }
-
-  filename = "go-services/wait-times-api/cloudbuild.yaml"
-
-  included_files = [
-    "go-services/wait-times-api/**",
-  ]
-
-  substitutions = {
-    _IMAGE = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.wait_times_repo.repository_id}/wait-times-api:latest"
-  }
-
-  depends_on = [
-    google_project_service.cloud_build,
-    google_artifact_registry_repository.wait_times_repo,
   ]
 }

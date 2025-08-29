@@ -51,10 +51,10 @@ gcloud run deploy "%SERVICE_NAME%" ^
     --project="%PROJECT_ID%" ^
     --platform=managed ^
     --allow-unauthenticated ^
-    --memory=512Mi ^
-    --cpu=1 ^
-    --max-instances=2 ^
-    --min-instances=1
+    --memory=256Mi ^
+    --cpu=.5 ^
+    --max-instances=1 ^
+    --min-instances=0
 
 if errorlevel 1 (
     echo Error: Cloud Run deployment failed

@@ -80,7 +80,6 @@ The `../scripts/` directory contains deployment scripts that work with this Terr
 
 The functions require the following environment variables:
 - `DATABASE_URL` - PostgreSQL connection string
-- `GO_DATABASE_URL` - Alternative database URL for Go services
 
 ## Monitoring
 

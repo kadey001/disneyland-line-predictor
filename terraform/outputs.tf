@@ -37,3 +37,19 @@ output "scheduler_service_account_email" {
   description = "Email of the service account used by Cloud Scheduler"
   value       = google_service_account.scheduler_sa.email
 }
+
+output "cost_optimization_notes" {
+  description = "Cost optimization measures implemented"
+  value = <<EOF
+DEV ENVIRONMENT COST OPTIMIZATIONS:
+- CPU: 0.5 cores, Memory: 256Mi per service
+- Min instances: 0 (pay-per-request)
+- Data collection: Every 5 minutes
+- Region: us-west2
+- Timeout: 5 minutes per request
+- CPU idle optimization: Enabled
+
+Estimated monthly cost: ~$5-15 for light dev usage
+Monitor costs in GCP Console > Billing
+EOF
+}

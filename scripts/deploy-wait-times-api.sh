@@ -39,12 +39,11 @@ gcloud run deploy "$SERVICE_NAME" \
     --project="$PROJECT_ID" \
     --platform=managed \
     --allow-unauthenticated \
-    --memory=512Mi \
-    --cpu=1 \
-    --max-instances=10 \
+    --memory=256Mi \
+    --cpu=.5 \
+    --max-instances=1 \
     --min-instances=0 \
-    --port=8080 \
-    --set-env-vars="GO_DATABASE_URL=${GO_DATABASE_URL}" \
+    --port=8080 
 
 echo "Deployment completed successfully!"
 

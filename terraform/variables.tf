@@ -37,7 +37,7 @@ variable "environment" {
 variable "data_collection_schedule" {
   description = "Cron schedule for data collection"
   type        = string
-  default     = "* 8-23,0-1 * * *"
+  default     = "*/3 8-23,0-1 * * *"
 }
 
 variable "scheduler_timezone" {
@@ -56,4 +56,16 @@ variable "github_repo" {
   description = "GitHub repository name"
   type        = string
   default     = "disneyland-line-predictor"
+}
+
+variable "wait_times_api_image_tag" {
+  description = "Docker image tag for Wait Times API"
+  type        = string
+  default     = "latest"
+}
+
+variable "live_data_collector_image_tag" {
+  description = "Docker image tag for Live Data Collector"
+  type        = string
+  default     = "latest"
 }
