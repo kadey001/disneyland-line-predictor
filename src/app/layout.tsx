@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/providers";
+import { ThemeProvider, SupabaseProvider } from "@/providers";
 import "./globals.css";
 import Header from "@/components/header";
 import { Analytics } from "@vercel/analytics/next"
@@ -34,14 +34,16 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <ErrorBoundaryWrapper>
-          <ThemeProvider>
-            <Header />
-            <main className="flex-1 overflow-auto">
-              {children}
-              <Analytics />
-              <SpeedInsights />
-            </main>
-          </ThemeProvider>
+          <SupabaseProvider>
+            <ThemeProvider>
+              <Header />
+              <main className="flex-1 overflow-auto">
+                {children}
+                <Analytics />
+                <SpeedInsights />
+              </main>
+            </ThemeProvider>
+          </SupabaseProvider>
         </ErrorBoundaryWrapper>
       </body>
     </html>

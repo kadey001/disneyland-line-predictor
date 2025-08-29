@@ -19,7 +19,15 @@ export default function Header() {
                 <div className="grow">
                     <h1 className="text-2xl font-bold text-center text-primary">Disneyland Wait Times</h1>
                 </div>
-                <div className="flex-none">
+                <div className="flex-none flex items-center gap-2">
+                    <Link
+                        href="/realtime-test"
+                        className="h-9 w-9 flex items-center justify-center text-primary hover:bg-white/20 rounded-md opacity-0 hover:opacity-100 transition-opacity"
+                        aria-label="Go to realtime test page"
+                        title="Realtime Test Page"
+                    >
+                        🧪
+                    </Link>
                     <ThemeToggle />
                 </div>
             </div>

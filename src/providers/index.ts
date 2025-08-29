@@ -1,3 +1,4 @@
 import ThemeProvider from "./ThemeProvider";
+import { SupabaseProvider } from "./SupabaseProvider";
 
-export { ThemeProvider };
+export { ThemeProvider, SupabaseProvider };

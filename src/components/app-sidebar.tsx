@@ -121,6 +121,11 @@ const data = {
       icon: IconSettings,
     },
     {
+      title: "Real-time Test",
+      url: "/test-realtime",
+      icon: IconDatabase,
+    },
+    {
       title: "Get Help",
       url: "#",
       icon: IconHelp,
