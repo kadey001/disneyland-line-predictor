@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"go-services/shared"
+	"go-services/shared/models"
 	"go-services/shared/repository"
 	"go-services/shared/response"
 	"log"
@@ -67,7 +68,13 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 		ctx2, cancel2 := context.WithTimeout(context.Background(), RequestTimeout)
 		defer cancel2()
 
-		rideDataHistory, err := repo.GetRideDataHistorySince(ctx2, since)
+		var rideDataHistory []*models.RideDataHistoryRecord
+		if rideID != "" {
+			rideDataHistory, err = repo.GetRideDataHistorySinceForRide(ctx2, since, rideID)
+		} else {
+			rideDataHistory, err = repo.GetRideDataHistorySince(ctx2, since)
+		}
+		
 		if err != nil {
 			log.Printf("Failed to get ride data history: %v", err)
 			http.Error(w, "Failed to retrieve ride data", http.StatusInternalServerError)

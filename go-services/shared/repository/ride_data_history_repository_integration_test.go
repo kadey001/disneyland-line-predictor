@@ -88,6 +88,9 @@ func setupTestDatabase(t *testing.T) (*pgxpool.Pool, func()) {
 }
 
 func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	pool, cleanup := setupTestDatabase(t)
 	defer cleanup()
 
@@ -242,6 +245,9 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 }
 
 func TestRideDataHistoryRepository_GetRideDataHistory_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	pool, cleanup := setupTestDatabase(t)
 	defer cleanup()
 

@@ -8,9 +8,20 @@
 
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 
-// Load .env file using dotenv (like Next.js does)
-dotenv.config();
+// Load .env files using dotenv (like Next.js does)
+// Next.js loads in this order: .env.production/.env.development, .env.local, .env
+const envModes = process.env.NODE_ENV === 'production' ? ['.env.production'] : ['.env.development'];
+const envFiles = [...envModes, '.env.local', '.env'];
+
+for (const file of envFiles) {
+    const envPath = path.resolve(process.cwd(), file);
+    if (fs.existsSync(envPath)) {
+        dotenv.config({ path: envPath });
+    }
+}
 
 // Zod schema for environment variables (same as in config.ts)
 const environmentSchema = z.object({

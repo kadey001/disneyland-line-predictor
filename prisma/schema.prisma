@@ -8,17 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model RideWaitTimeSnapshot {
-  id           Int      @id @default(autoincrement())
-  rideId       BigInt?  @map("ride_id")
-  rideName     String   @map("ride_name")
-  isOpen       Boolean  @map("is_open")
-  waitTime     BigInt?  @map("wait_time")
-  snapshotTime DateTime @map("snapshot_time")
-
-  @@map("ride_wait_time_snapshots")
-}
-
 // DateTimes are stored in UTC
 model RideDataHistory {
   id              BigInt    @id @default(autoincrement())
@@ -38,6 +27,7 @@ model RideDataHistory {
   operatingHours  Json      @default("[]") @map("operating_hours")
   forecast        Json      @default("[]")
 
+  @@unique([rideId, lastUpdated])
   @@index([parkId])
   @@index([status])
   @@index([rideId])

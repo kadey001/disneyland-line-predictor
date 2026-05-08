@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"go-services/shared/service"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -40,19 +42,31 @@ func main() {
 	http.HandleFunc("/collect", collectHandler)
 	http.HandleFunc("/", rootHandler)
 
-	// Start HTTP server
-	logger.Infof("Starting HTTP server on port %s", port)
-	logger.Infof("Available endpoints: /health, /collect")
+	// Create HTTP server
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: nil, // Uses DefaultServeMux
+	}
 
 	// Set up graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	
 	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 		<-sigChan
-
-		logger.Infof("Shutdown signal received...")
-		os.Exit(0)
+		logger.Infof("Shutdown signal received, initiating graceful shutdown...")
+		
+		// Create a context with a timeout for the shutdown process
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		
+		if err := server.Shutdown(ctx); err != nil {
+			logger.Errorf("HTTP server shutdown error: %v", err)
+		}
 	}()
 
-	logger.Fatal(http.ListenAndServe(":"+port, nil))
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		logger.Fatal(err)
+	}
+	logger.Infof("Server stopped properly")
 }

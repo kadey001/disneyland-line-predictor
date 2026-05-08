@@ -202,13 +202,7 @@ resource "google_cloud_run_service_iam_member" "wait_times_api_public_access" {
   member   = "allUsers"
 }
 
-# Allow public access to the Live Data Collector service (for manual testing)
-resource "google_cloud_run_service_iam_member" "live_data_collector_public_access" {
-  service  = google_cloud_run_v2_service.live_data_collector.name
-  location = google_cloud_run_v2_service.live_data_collector.location
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+
 
 # Create a service account for Cloud Scheduler
 resource "google_service_account" "scheduler_sa" {
