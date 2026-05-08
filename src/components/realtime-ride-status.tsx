@@ -72,10 +72,10 @@ export function RideStatusCard({ rideId, parkId, initialData }: RideStatusCardPr
                 <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Status:</span>
                     <span className={`text-sm font-medium ${currentData.status === 'OPERATING'
-                            ? 'text-green-600'
-                            : currentData.status === 'CLOSED'
-                                ? 'text-red-600'
-                                : 'text-yellow-600'
+                        ? 'text-green-600'
+                        : currentData.status === 'CLOSED'
+                            ? 'text-red-600'
+                            : 'text-yellow-600'
                         }`}>
                         {currentData.status}
                     </span>

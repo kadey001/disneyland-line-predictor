@@ -9,10 +9,14 @@ const nextConfig: NextConfig = {
   // Environment variables that should be available at build time
   env: {
     WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL,
-    QUEUE_TIMES_API_URL: process.env.QUEUE_TIMES_API_URL,
   },
   images: {
-    unoptimized: true, // Try this if you're having optimization issues
+    remotePatterns: [new URL('https://kcr90ci7l2.ufs.sh/**')],
+    localPatterns: [
+      {
+        pathname: '/**',
+      },
+    ],
   },
 };
 

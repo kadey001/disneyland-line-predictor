@@ -19,7 +19,6 @@ const environmentSchema = z.object({
     // Required variables
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     WAIT_TIMES_API_URL: z.string().url('WAIT_TIMES_API_URL must be a valid URL'),
-    QUEUE_TIMES_API_URL: z.string().url('QUEUE_TIMES_API_URL must be a valid URL'),
 
     // Optional variables
     NEXTAUTH_SECRET: z.string().optional(),
@@ -61,7 +60,6 @@ function validateEnvironment() {
         NODE_ENV: process.env.NODE_ENV,
         DATABASE_URL: process.env.DATABASE_URL || '',
         WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL || 'https://wait-times-service-602235714983.us-west2.run.app',
-        QUEUE_TIMES_API_URL: process.env.QUEUE_TIMES_API_URL || 'https://queue-times.com/parks/16/queue_times.json',
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
         NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     };
@@ -72,14 +70,10 @@ function validateEnvironment() {
             envData.WAIT_TIMES_API_URL = 'http://localhost:8080/wait-times';
             console.log(`ℹ️  Using default value for WAIT_TIMES_API_URL: http://localhost:8080/wait-times`);
         }
-        if (!process.env.QUEUE_TIMES_API_URL) {
-            envData.QUEUE_TIMES_API_URL = 'https://queue-times.com/parks/16/queue_times.json';
-            console.log(`ℹ️  Using default value for QUEUE_TIMES_API_URL: https://queue-times.com/parks/16/queue_times.json`);
-        }
     }
 
     console.log('🔧 Current environment variables:');
-    const varsToShow = ['NODE_ENV', 'DATABASE_URL', 'WAIT_TIMES_API_URL', 'QUEUE_TIMES_API_URL', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
+    const varsToShow = ['NODE_ENV', 'DATABASE_URL', 'WAIT_TIMES_API_URL', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
     varsToShow.forEach(varName => {
         const value = envData[varName as keyof typeof envData];
         if (value) {
@@ -96,7 +90,6 @@ function validateEnvironment() {
         console.log('✅ Required variables validated:');
         console.log(`   DATABASE_URL: ${SECRET_PLACEHOLDER}`);
         console.log(`   WAIT_TIMES_API_URL: ${validatedEnv.WAIT_TIMES_API_URL}`);
-        console.log(`   QUEUE_TIMES_API_URL: ${validatedEnv.QUEUE_TIMES_API_URL}`);
 
         if (validatedEnv.NODE_ENV === 'production') {
             console.log(`   NEXTAUTH_SECRET: ${SECRET_PLACEHOLDER}`);

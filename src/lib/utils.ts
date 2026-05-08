@@ -10,6 +10,12 @@ export function formatDateToChartAxis(date: Date) {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+export function convertUTCToLocal(utcDateString: string): string {
+  const utcDate = new Date(utcDateString);
+  const localDate = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  return localDate.toISOString();
+}
+
 export function filterTodaysRideHistory(rideHistory: RideWaitTimeHistory): RideWaitTimeHistory {
   const now = new Date();
 

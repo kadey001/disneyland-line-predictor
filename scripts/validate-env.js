@@ -11,8 +11,7 @@ require('dotenv').config();
 
 const requiredVars = [
     'DATABASE_URL',
-    'WAIT_TIMES_API_URL',
-    'QUEUE_TIMES_API_URL'
+    'WAIT_TIMES_API_URL'
 ];
 
 const productionVars = [
@@ -20,8 +19,7 @@ const productionVars = [
 ];
 
 const urlVars = [
-    'WAIT_TIMES_API_URL',
-    'QUEUE_TIMES_API_URL'
+    'WAIT_TIMES_API_URL'
 ];
 
 const SECRET_PLACEHOLDER = '*****'
@@ -45,8 +43,7 @@ function validateEnvironment() {
     // Only use defaults if variables are completely missing
     const defaults = {
         NODE_ENV: 'development',
-        WAIT_TIMES_API_URL: 'http://localhost:8080/wait-times',
-        QUEUE_TIMES_API_URL: 'https://queue-times.com/parks/16/queue_times.json'
+        WAIT_TIMES_API_URL: 'http://localhost:8080/wait-times'
     };
 
     // Apply defaults only if not in production and variable is missing

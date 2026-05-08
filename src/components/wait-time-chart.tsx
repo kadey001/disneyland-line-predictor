@@ -27,23 +27,41 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
         return selectedRide?.status === "OPERATING" ? "green" : "red";
     }, [selectedRide]);
 
+    const waitTimeBgColor = useMemo(() => {
+        if (!selectedRide?.waitTime) return "bg-gray-100 dark:bg-gray-700";
+        if (selectedRide.waitTime <= 30) return "bg-green-100 dark:bg-green-700";
+        if (selectedRide.waitTime <= 60) return "bg-yellow-100 dark:bg-yellow-700";
+        return "bg-red-100 dark:bg-red-800";
+    }, [selectedRide?.waitTime]);
+
     const transformedData = useMemo(() => {
         if (!rideWaitTimeHistory || !selectedRide) return [];
-        return rideWaitTimeHistory.map((_ride) => ({
-            rideName: selectedRide.rideName,
-            waitTime: _ride.waitTime,
-            snapshotTime: _ride.snapshotTime,
-        }));
+        return rideWaitTimeHistory.map((_ride) => {
+            // console.log('RIDE DATA: ', _ride);
+            const utcDate = new Date(_ride.snapshotTime);
+            const pstDate = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+            return {
+                rideName: selectedRide.rideName,
+                waitTime: _ride.waitTime,
+                snapshotTime: pstDate.toISOString(),
+            };
+        });
     }, [rideWaitTimeHistory, selectedRide]);
 
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex justify-between items-center">
                 <CardTitle>
                     Ride: {selectedRide?.rideName}
                     <br />
                     Status: {selectedRide?.status === "OPERATING" ? "Open" : "Closed"}<span className={`inline-block w-2 h-2 rounded-full ml-2`} style={{ backgroundColor: statusDotColor }} />
                 </CardTitle>
+                <div className={`${waitTimeBgColor} px-4 py-2 rounded-lg shadow-sm`}>
+                    <div className="text-2xl font-bold text-primary text-center">
+                        {selectedRide?.waitTime ? `${selectedRide.waitTime}` : 'N/A'}
+                    </div>
+                    <div className="text-xs text-primary text-center">min</div>
+                </div>
             </CardHeader>
             <CardContent className="p-0 md:p-6">
                 <ChartContainer config={chartConfig} className="min-h-[200px] max-h-[600px] w-full">

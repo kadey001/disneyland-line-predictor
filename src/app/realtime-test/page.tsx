@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRealtimeRideUpdates } from '@/hooks/use-realtime-ride-updates'
 import { Database, supabase } from '@/lib/supabase'
-import { DebugInfo, Statistics, RecentUpdates, Instructions, ConnectionStatusBar } from '@/components/realtime-test'
+import { DebugInfo, Statistics, RecentUpdates, ConnectionStatusBar } from '@/components/realtime-test'
 
 type RideDataHistory = Database['public']['Tables']['ride_data_history']['Row']
 
@@ -34,8 +34,6 @@ export default function TestRealtimePage() {
         testResult: null as string | null
     })
 
-    const [has401Error, setHas401Error] = useState(false)
-
     // Test Supabase connection
     const testSupabaseConnection = async () => {
         try {
@@ -43,8 +41,9 @@ export default function TestRealtimePage() {
             setDebugInfo(prev => ({ ...prev, testResult: 'Testing...' }))
 
             // First, test basic authentication
-            console.log('� Testing authentication...')
+            console.log('🧪 Testing authentication...')
             const { data: authTest, error: authError } = await supabase.auth.getSession()
+            console.log('Auth test result:', authTest, authError)
 
             if (authError) {
                 console.error('❌ Authentication test failed:', authError)
@@ -55,7 +54,7 @@ export default function TestRealtimePage() {
                 }))
                 // Check if it's a 401 error
                 if (authError.message.includes('401') || authError.message.includes('Unauthorized') || authError.message.includes('JWT')) {
-                    setHas401Error(true)
+                    console.error('❌ Detected 401 Unauthorized error - likely due to invalid or expired anon key');
                 }
                 return
             }
@@ -80,7 +79,7 @@ export default function TestRealtimePage() {
                         testResult: 'Auth Issue: Check your anon key',
                         lastError: 'Invalid or expired Supabase anon key'
                     }))
-                    setHas401Error(true)
+                    console.error('❌ Detected 401 Unauthorized error - likely due to invalid or expired anon key');
                 } else {
                     setDebugInfo(prev => ({
                         ...prev,
@@ -97,7 +96,6 @@ export default function TestRealtimePage() {
                 testResult: `Success: Found ${data?.length || 0} records`,
                 lastError: null
             }))
-            setHas401Error(false)
 
         } catch (error) {
             console.error('❌ Test error:', error)

@@ -16,8 +16,15 @@ export function useFilteredRideHistory({
     const selectedRideHistory = useMemo(() => {
         if (!selectedRideId) return [];
         const filtered = ridesHistory[selectedRideId] || [];
-        // Sort by snapshotTime (UTC string) in ascending order (oldest first)
-        return filtered.sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
+        // Sort by snapshotTime (equivalent to lastUpdated for history entries) in ascending order (oldest first)
+        // Ensure we handle invalid dates gracefully
+        return filtered
+            .filter(item => item.snapshotTime && !isNaN(new Date(item.snapshotTime).getTime()))
+            .sort((a, b) => {
+                const timeA = new Date(a.snapshotTime).getTime();
+                const timeB = new Date(b.snapshotTime).getTime();
+                return timeA - timeB; // Ascending order: oldest first, newest last
+            });
     }, [ridesHistory, selectedRideId]);
 
     const filteredRidesHistory = useMemo(() => {
@@ -46,8 +53,16 @@ export function useFilteredRideHistory({
                 break;
         }
 
-        return selectedRideHistory.filter(item => new Date(item.snapshotTime) >= cutoffTime)
-            .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
+        return selectedRideHistory
+            .filter(item => {
+                const itemTime = new Date(item.snapshotTime);
+                return !isNaN(itemTime.getTime()) && itemTime >= cutoffTime;
+            })
+            .sort((a, b) => {
+                const timeA = new Date(a.snapshotTime).getTime();
+                const timeB = new Date(b.snapshotTime).getTime();
+                return timeA - timeB; // Ensure ascending order is maintained
+            });
     }, [selectedRideHistory, timeFilter]);
 
     return { filteredRidesHistory };

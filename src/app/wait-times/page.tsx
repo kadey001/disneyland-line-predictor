@@ -7,19 +7,21 @@ import { useWaitTimesData } from '@/hooks/use-wait-times-data';
 import StatusIndicator from '@/components/ui/status-indicator';
 
 export default function WaitTimesPage() {
-    const { data, error, isLoading, handleRealtimeUpdate } = useWaitTimesData();
-
-    // Set up real-time subscription for ALL parks (no parkId needed)
+    // First get the real-time connection status
     const { isConnected: isRealtimeConnected } = useRealtimeRideUpdates({
+        enabled: true // Always enabled to monitor connection
+    });
+
+    // Then use the data hook with connection status for conditional polling
+    const { data, error, isLoading, handleRealtimeUpdate } = useWaitTimesData({
+        isRealtimeConnected
+    });
+
+    // Set up real-time subscription with the update handler
+    useRealtimeRideUpdates({
         onRideUpdate: handleRealtimeUpdate,
         enabled: !!data // Only enable after initial data load
     });
-
-    // const REFRESH_INTERVAL = 30000; // 30 seconds (fallback polling)
-    // useRefresh({
-    //     interval: REFRESH_INTERVAL,
-    //     refreshFn: fetchData
-    // });
 
     if (error) throw new Error(error);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import RideSelect from "@/components/ride-select";
 import WaitTimeChart from "@/components/wait-time-chart";
 import { useFilteredRideHistory } from "@/hooks/use-filtered-ride-history";
@@ -34,18 +34,6 @@ export default function WaitTimesClient({ data }: WaitTimesClientProps) {
     const selectedRide: LiveWaitTimeEntry | null = useMemo(() => {
         return liveWaitTime.find((ride) => ride.rideId === selectedRideId) || null;
     }, [liveWaitTime, selectedRideId]);
-
-    useEffect(() => {
-        // Check against the selected Ride wait time and the last wait time for that ride in the history, log if there is a difference
-        if (selectedRide && filteredRidesHistory.length > 0) {
-            const lastSnapshotTime = filteredRidesHistory[filteredRidesHistory.length - 1].snapshotTime;
-            console.log(`Last snapshot time for ${selectedRide.rideName}: ${lastSnapshotTime}`);
-            console.log(`Curr snapshot time for ${selectedRide.rideName}: ${selectedRide.lastUpdated}`);
-            if (selectedRide.lastUpdated !== lastSnapshotTime) {
-                console.log(`Snapshot time for ${selectedRide.rideName} changed from ${lastSnapshotTime} to ${selectedRide.lastUpdated}`);
-            }
-        }
-    }, [selectedRide, filteredRidesHistory]);
 
     return (
         <div className="w-full h-full md:container md:mx-auto">
