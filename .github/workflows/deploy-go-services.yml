@@ -43,9 +43,9 @@ jobs:
       run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
     - name: Build and push Wait Times API
-      working-directory: ./go-services/wait-times-api
+      working-directory: ./go-services
       run: |
-        docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/wait-times-api:latest .
+        docker build -f wait-times-api/Dockerfile -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/wait-times-api:latest .
         docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/wait-times-api:latest
 
     - name: Deploy to Cloud Run
