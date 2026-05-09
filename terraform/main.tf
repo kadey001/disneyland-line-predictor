@@ -114,10 +114,22 @@ resource "google_cloud_run_v2_service" "wait_times_api" {
 
       resources {
         limits = {
-          cpu    = "0.5"
+          cpu    = "1"
           memory = "256Mi"
         }
         cpu_idle = true
+      }
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
+    }
+
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.wait_times_db.connection_name]
       }
     }
 
@@ -168,10 +180,22 @@ resource "google_cloud_run_v2_service" "live_data_collector" {
 
       resources {
         limits = {
-          cpu    = "0.5"
+          cpu    = "1"
           memory = "256Mi"
         }
         cpu_idle = true
+      }
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
+    }
+
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.wait_times_db.connection_name]
       }
     }
 

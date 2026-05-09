@@ -48,8 +48,41 @@ DEV ENVIRONMENT COST OPTIMIZATIONS:
 - Region: us-west2
 - Timeout: 5 minutes per request
 - CPU idle optimization: Enabled
+- Cloud SQL: db-f1-micro shared-core instance
+- Cloud SQL backups: 7 day retention, no PITR
 
-Estimated monthly cost: ~$5-15 for light dev usage
+Estimated monthly cost: ~$15-25 for light dev usage
 Monitor costs in GCP Console > Billing
 EOF
+}
+
+output "cloud_sql_instance_name" {
+  description = "Name of the Cloud SQL instance"
+  value       = google_sql_database_instance.wait_times_db.name
+}
+
+output "cloud_sql_connection_name" {
+  description = "Connection name for Cloud SQL Auth Proxy"
+  value       = google_sql_database_instance.wait_times_db.connection_name
+}
+
+output "cloud_sql_public_ip" {
+  description = "Public IP of the Cloud SQL instance"
+  value       = google_sql_database_instance.wait_times_db.public_ip_address
+}
+
+output "cloud_sql_database_name" {
+  description = "Name of the application database"
+  value       = google_sql_database.wait_times.name
+}
+
+output "cloud_sql_user" {
+  description = "Database username"
+  value       = google_sql_user.app_user.name
+}
+
+output "cloud_sql_password" {
+  description = "Database password"
+  value       = random_password.db_password.result
+  sensitive   = true
 }
