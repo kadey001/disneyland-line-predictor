@@ -1,22 +1,14 @@
 'use client'
 
-import dynamic from "next/dynamic";
 import { ReactNode } from "react";
-
-// Dynamically import SupabaseProvider to avoid SSR issues
-const SupabaseProvider = dynamic(() => import("@/providers").then(mod => ({ default: mod.SupabaseProvider })), {
-    ssr: false,
-    loading: () => null
-});
 
 interface ClientProvidersProps {
     children: ReactNode;
 }
 
+// Client providers wrapper — Supabase has been removed, data is served via
+// the Go Wait Times API with polling. This component is kept as a future
+// extension point for any client-side providers that need 'use client'.
 export function ClientProviders({ children }: ClientProvidersProps) {
-    return (
-        <SupabaseProvider>
-            {children}
-        </SupabaseProvider>
-    );
+    return <>{children}</>;
 }

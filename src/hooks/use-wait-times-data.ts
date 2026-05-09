@@ -1,21 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { WaitTimesResponse } from '@/lib/types';
-import { Database } from '@/lib/supabase';
 import { useRefresh } from '@/hooks/use-refresh';
 
-type RideDataHistory = Database['public']['Tables']['ride_data_history']['Row'];
-
 interface UseWaitTimesDataProps {
-    onRealtimeUpdate?: (newRideData: RideDataHistory) => void;
-    isRealtimeConnected?: boolean;
     initialData?: WaitTimesResponse | null;
     selectedRideId?: string;
 }
 
 // TODO: Fix the sorting of the history, it's getting messed up somewhere and is out of order
 export function useWaitTimesData({ 
-    onRealtimeUpdate, 
-    isRealtimeConnected = true, 
     initialData = null,
     selectedRideId
 }: UseWaitTimesDataProps = {}) {
@@ -31,7 +24,8 @@ export function useWaitTimesData({
             const url = rideId ? `/api/ride-wait-times?ride_id=${rideId}` : '/api/ride-wait-times';
             const response = await fetch(url, {
                 method: 'GET',
-                cache: 'default',
+                // No cache on explicit fetch — ensures page refresh always gets fresh data
+                cache: 'no-store',
             });
 
             if (!response.ok) {
@@ -86,7 +80,7 @@ export function useWaitTimesData({
             console.log(`Polling data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
             console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
 
-            // Smart merge to prevent duplicates and preserve real-time updates
+            // Smart merge to prevent duplicates and preserve existing data
             setData(prevData => {
                 if (!prevData) return responseData;
 
@@ -140,60 +134,6 @@ export function useWaitTimesData({
         }
     }, []);
 
-    const handleRealtimeUpdate = useCallback((newRideData: RideDataHistory) => {
-        setData(prevData => {
-            if (!prevData) return prevData;
-
-            // TODO: Revist this
-            // Temporary fix for missing TZ info on ISO string from update data
-            // Works since we know for sure that this data is already UTC
-            // eg. 2025-08-30T01:59:43 -> 2025-08-30T01:59:43.000Z
-            // Ensure timestamp is a full ISO string with milliseconds and Z
-            const formattedTimestamp = newRideData.last_updated && newRideData.last_updated.includes('.')
-                ? newRideData.last_updated
-                : newRideData.last_updated
-                    ? `${newRideData.last_updated}.000Z`
-                    : new Date().toISOString();
-            // console.log('Formatted timestamp:', formattedTimestamp);
-
-            // Update live wait time data
-            const updatedLiveWaitTime = prevData.liveWaitTime?.map(ride => {
-                if (ride.rideId === newRideData.ride_id) {
-                    return {
-                        ...ride,
-                        waitTime: newRideData.standby_wait_time || 0,
-                        status: newRideData.status,
-                        lastUpdated: formattedTimestamp
-                    };
-                }
-                return ride;
-            }) || [];
-
-            // Update ride history if it exists
-            const updatedHistory = { ...prevData.groupedRidesHistory };
-            if (updatedHistory[newRideData.ride_id]) {
-                updatedHistory[newRideData.ride_id] = [
-                    {
-                        waitTime: newRideData.standby_wait_time || 0,
-                        snapshotTime: formattedTimestamp
-                    },
-                    ...updatedHistory[newRideData.ride_id].slice(0, 49) // Keep last 50 entries
-                ];
-            }
-
-            const newData = {
-                ...prevData,
-                liveWaitTime: updatedLiveWaitTime,
-                groupedRidesHistory: updatedHistory
-            };
-
-            // Call external callback if provided
-            onRealtimeUpdate?.(newRideData);
-
-            return newData;
-        });
-    }, [onRealtimeUpdate]);
-
     const hasData = !!data;
     useEffect(() => {
         // If we have a selected ride but no history for it (or only partial history from the overview),
@@ -210,12 +150,15 @@ export function useWaitTimesData({
         }
     }, [fetchData, selectedRideId, hasData, data]);
 
-    // Polling as backup mechanism - only starts when live connection fails
-    const REFRESH_INTERVAL = 300000; // 5 minutes (fallback polling)
+    // Poll for updates at a regular interval
+    // Since we no longer have Supabase realtime, polling is always enabled
+    // Data collection happens every 3 minutes, so 90-second polling ensures
+    // users see updates within one polling cycle of them being collected
+    const REFRESH_INTERVAL = 90000; // 90 seconds
     useRefresh({
         interval: REFRESH_INTERVAL,
-        refreshFn: () => pollData(), // Use pollData to avoid loading state
-        enabled: !!data && !isRealtimeConnected // Only enable polling when live connection fails
+        refreshFn: () => pollData(),
+        enabled: !!data // Only poll once we have initial data
     });
 
     return {
@@ -224,6 +167,5 @@ export function useWaitTimesData({
         isLoading,
         fetchData,
         refetch: fetchData,
-        handleRealtimeUpdate
     };
 }
