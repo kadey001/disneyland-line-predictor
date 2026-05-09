@@ -294,11 +294,13 @@ func (r *RideDataHistoryRepository) GetLatestRideDataForAllRides(ctx context.Con
 	var records []*models.RideDataHistoryRecord
 
 	// Use pgx directly to avoid prepared statement caching issues
+	// Added a 24-hour bounding window to prevent full table scans and timeouts
 	query := `
 		SELECT DISTINCT ON (ride_id) id, ride_id, external_id, park_id, entity_type, name, status, last_updated,
 		       created_at, updated_at, operating_hours, standby_wait_time,
 		       return_time_state, return_start, return_end, forecast
 		FROM ride_data_history
+		WHERE last_updated >= NOW() - INTERVAL '24 hours'
 		ORDER BY ride_id, last_updated DESC`
 
 	rows, err := r.pool.Query(ctx, query)
