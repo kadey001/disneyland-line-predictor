@@ -70,7 +70,7 @@ function validateEnvironment() {
     const envData = {
         NODE_ENV: process.env.NODE_ENV,
         DATABASE_URL: process.env.DATABASE_URL || '',
-        WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL || 'https://wait-times-api-fhixrynusa-wl.a.run.app',
+        WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL || 'https://wait-times-api-602235714983.us-west2.run.app',
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
         NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     };
