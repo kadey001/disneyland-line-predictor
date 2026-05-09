@@ -56,26 +56,43 @@ export async function GET(request: NextRequest) {
         if (rideId) apiUrl.searchParams.set('ride_id', rideId);
         if (windowHours) apiUrl.searchParams.set('window_hours', windowHours);
 
-        console.log('Fetching from external API:', apiUrl.toString());
+        console.log(`Fetching from external API: ${apiUrl.toString()} (Method: GET)`);
 
         // Add timeout for Vercel serverless functions
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-        // Use GET instead of POST to allow Next.js Data Cache and CDN caching
-        const response = await fetch(apiUrl.toString(), {
+        // Try GET first (preferred for caching)
+        let response = await fetch(apiUrl.toString(), {
             method: 'GET',
             headers: {
                 'Accept-Encoding': 'gzip',
                 'User-Agent': 'Disneyland-Line-Predictor/1.0',
             },
-            next: { revalidate: 30 }, // Revalidate every 30 seconds in Next.js Data Cache
+            next: { revalidate: 30 },
             signal: controller.signal,
         });
+
+        // Fallback to POST if GET is not allowed (handles older service versions)
+        if (response.status === 405) {
+            console.warn(`External API returned 405 for GET, falling back to POST: ${apiUrl.toString()}`);
+            response = await fetch(apiUrl.toString(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip',
+                    'User-Agent': 'Disneyland-Line-Predictor/1.0',
+                },
+                // POST requests are not cached by Next.js Data Cache by default
+                cache: 'no-store',
+                signal: controller.signal,
+            });
+        }
 
         clearTimeout(timeoutId);
 
         if (!response.ok) {
+            console.error(`External API error: ${response.status} ${response.statusText} for ${apiUrl.toString()}`);
             throw new Error(`External API returned ${response.status}: ${response.statusText}`);
         }
 

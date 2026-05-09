@@ -83,9 +83,9 @@ jobs:
       run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
     - name: Build and push Live Data Collector
-      working-directory: ./go-services/live-data-collector-service
+      working-directory: ./go-services
       run: |
-        docker build -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector:latest .
+        docker build -f live-data-collector-service/Dockerfile -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector:latest .
         docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector:latest
 
     - name: Deploy to Cloud Run
@@ -95,7 +95,7 @@ jobs:
           --platform managed \
           --region ${{ env.GCP_REGION }} \
           --allow-unauthenticated \
-          --port 8081 \
+          --port 8080 \
           --memory 512Mi \
           --cpu 1 \
           --concurrency 80 \

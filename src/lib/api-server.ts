@@ -17,10 +17,11 @@ export async function getWaitTimesData(rideId?: string, windowHours?: number): P
         url.searchParams.set('window_hours', '4');
     }
 
-    console.log('Server-side fetching wait times from:', url.toString());
+    console.log(`Server-side fetching wait times from: ${url.toString()} (Method: GET)`);
 
     try {
-        const response = await fetch(url.toString(), {
+        // Try GET first
+        let response = await fetch(url.toString(), {
             method: 'GET',
             headers: {
                 'Accept-Encoding': 'gzip',
@@ -30,8 +31,22 @@ export async function getWaitTimesData(rideId?: string, windowHours?: number): P
             next: { revalidate: 30 }
         });
 
+        // Fallback to POST if GET is not allowed
+        if (response.status === 405) {
+            console.warn(`Server-side fetch: External API returned 405 for GET, falling back to POST: ${url.toString()}`);
+            response = await fetch(url.toString(), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip',
+                    'User-Agent': 'Disneyland-Line-Predictor/Server',
+                },
+                cache: 'no-store'
+            });
+        }
+
         if (!response.ok) {
-            console.error(`Server-side fetch failed with status: ${response.status}`);
+            console.error(`Server-side fetch failed with status: ${response.status} for ${url.toString()}`);
             return null;
         }
 
