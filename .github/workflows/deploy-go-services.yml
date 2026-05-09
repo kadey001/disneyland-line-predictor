@@ -60,6 +60,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --service-account wait-times-cloud-run-sa@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
           --remove-env-vars DATABASE_URL \
           --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
@@ -91,7 +92,7 @@ jobs:
 
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy live-data-collector \
+        gcloud run deploy live-data-collector-service \
           --image ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector:latest \
           --platform managed \
           --region ${{ env.GCP_REGION }} \
@@ -101,6 +102,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --service-account wait-times-cloud-run-sa@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
           --remove-env-vars DATABASE_URL \
           --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
