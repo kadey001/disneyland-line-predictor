@@ -60,8 +60,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
-          --set-env-vars DATABASE_URL=${{ secrets.DATABASE_URL }} \
-          --set-env-vars ENV=production
+          --update-env-vars ENV=production
 
   deploy-live-data-collector:
     name: Deploy Live Data Collector
@@ -100,8 +99,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
-          --set-env-vars DATABASE_URL=${{ secrets.DATABASE_URL }} \
-          --set-env-vars ENV=production
+          --update-env-vars ENV=production
 
   notify:
     name: Notify Deployment
