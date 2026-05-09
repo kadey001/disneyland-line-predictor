@@ -60,6 +60,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
 
   deploy-live-data-collector:
@@ -99,6 +100,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
 
   notify:
