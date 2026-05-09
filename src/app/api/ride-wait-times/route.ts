@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TTLCache } from '@/lib/ttl-cache';
 import { WaitTimesResponse } from '@/lib/types';
 
-const TTL_CACHE_DURATION = 30 * 1000; // 30 seconds
+const TTL_CACHE_DURATION = 60 * 1000; // 60 seconds
 const cache = new TTLCache<WaitTimesResponse>(TTL_CACHE_DURATION);
 
 export async function GET(request: NextRequest) {
-    cache.stats();
-    console.log('Received request for ride wait times');
+    const urlObj = new URL(request.url);
+    const rideId = urlObj.searchParams.get('ride_id');
+    const windowHours = urlObj.searchParams.get('window_hours');
+    
+    const cacheKey = `ride-wait-times-${rideId || 'all'}-${windowHours || 'default'}`;
+    const now = Date.now();
+
+    console.log(`Received request for ride wait times: ${cacheKey}`);
     const url = process.env.WAIT_TIMES_API_URL;
-    console.log('WAIT_TIMES_API_URL:', url);
 
     if (!url) {
         console.error('WAIT_TIMES_API_URL environment variable is not set');
@@ -20,83 +25,65 @@ export async function GET(request: NextRequest) {
     }
 
     // Check for cache stats request
-    const urlObj = new URL(request.url);
     if (urlObj.searchParams.get('stats') === 'true') {
         const stats = cache.stats();
         return NextResponse.json({
             cache: stats,
             ttl: TTL_CACHE_DURATION,
-            ttlFormatted: '45 seconds'
         });
     }
 
-    // Check for ride_id filter
-    const rideId = urlObj.searchParams.get('ride_id');
-    const cacheKey = rideId ? `ride-wait-times-${rideId}` : 'ride-wait-times';
-    const now = Date.now();
-
-    if (rideId) {
-        console.log(`Filtering by ride_id: ${rideId}`);
-    }
-
-    // Check cache first - TTLCache handles expiration internally
+    // Check in-memory cache first (fastest, survives for warm instances)
     const cachedEntry = cache.get(cacheKey);
     if (cachedEntry) {
-        console.log('Returning cached data');
-        const responseData = {
+        console.log('Returning from in-memory cache');
+        return NextResponse.json({
             ...cachedEntry.data,
             _cachedAt: new Date(cachedEntry.timestamp).toISOString(),
             _fromCache: true,
-        };
-        return NextResponse.json(responseData, {
+            _cacheSource: 'memory'
+        }, {
             status: 200,
             headers: {
-                'Cache-Control': 'public, max-age=45, s-maxage=45, stale-while-revalidate=15',
-                'X-Data-Source': 'cache',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=30',
+                'X-Data-Source': 'memory-cache',
             },
         });
     }
 
-    console.log('Cache miss or expired, forwarding request to:', url);
-
     try {
         const apiUrl = new URL(`${url}/wait-times`);
-        if (rideId) {
-            apiUrl.searchParams.set('ride_id', rideId);
-        }
+        if (rideId) apiUrl.searchParams.set('ride_id', rideId);
+        if (windowHours) apiUrl.searchParams.set('window_hours', windowHours);
 
-        console.log('Making request to:', apiUrl.toString());
+        console.log('Fetching from external API:', apiUrl.toString());
 
         // Add timeout for Vercel serverless functions
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
 
+        // Use GET instead of POST to allow Next.js Data Cache and CDN caching
         const response = await fetch(apiUrl.toString(), {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
                 'User-Agent': 'Disneyland-Line-Predictor/1.0',
             },
-            cache: 'no-cache',
+            next: { revalidate: 30 }, // Revalidate every 30 seconds in Next.js Data Cache
             signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
-
-        console.log('External API response status:', response.status);
 
         if (!response.ok) {
             throw new Error(`External API returned ${response.status}: ${response.statusText}`);
         }
 
         const data: WaitTimesResponse = await response.json();
-        console.log('Successfully received data from external API');
-
-        // Cache the response
+        
+        // Cache in memory for this instance
         cache.set(cacheKey, data);
 
-        // Return structured response
         const responseData = {
             ...data,
             _cachedAt: new Date(now).toISOString(),
@@ -104,9 +91,9 @@ export async function GET(request: NextRequest) {
         };
 
         return NextResponse.json(responseData, {
-            status: response.status,
+            status: 200,
             headers: {
-                'Cache-Control': 'public, max-age=45, s-maxage=45, stale-while-revalidate=15',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=30',
                 'X-Data-Source': 'api',
             },
         });

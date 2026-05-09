@@ -8,17 +8,22 @@ import { calculateWaitTimeTrends } from "@/lib/trend-calculator";
 import type { LiveWaitTimeEntry, WaitTimesResponse } from "@/lib/types";
 import TimeFilterSelector, { type TimeFilter } from "./time-filter-selector";
 import WaitTimeTrendChart from "./wait-time-trend-chart";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { IMPORTANT_DISNEYLAND_RIDES } from "@/lib/rides";
 
 interface WaitTimesClientProps {
     data: WaitTimesResponse;
+    selectedRideId: string;
+    setSelectedRideId: (id: string) => void;
+    timeFilter: TimeFilter;
+    setTimeFilter: (filter: TimeFilter) => void;
 }
 
-export default function WaitTimesClient({ data }: WaitTimesClientProps) {
-    const [selectedRideId, setSelectedRideId] = useLocalStorage<string>('selectedRideId', IMPORTANT_DISNEYLAND_RIDES[0].id);
-    const [timeFilter, setTimeFilter] = useLocalStorage<TimeFilter>('timeFilter', 'full-day');
-
+export default function WaitTimesClient({ 
+    data, 
+    selectedRideId, 
+    setSelectedRideId, 
+    timeFilter, 
+    setTimeFilter 
+}: WaitTimesClientProps) {
     const liveWaitTime = useMemo(() => data?.liveWaitTime || [], [data.liveWaitTime]);
     const groupedRidesHistory = useMemo(() => data?.groupedRidesHistory || {}, [data.groupedRidesHistory]);
     const attractionAtlas = useMemo(() => data?.attractionAtlas || [], [data.attractionAtlas]);

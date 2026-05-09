@@ -8,22 +8,30 @@ type RideDataHistory = Database['public']['Tables']['ride_data_history']['Row'];
 interface UseWaitTimesDataProps {
     onRealtimeUpdate?: (newRideData: RideDataHistory) => void;
     isRealtimeConnected?: boolean;
+    initialData?: WaitTimesResponse | null;
+    selectedRideId?: string;
 }
 
 // TODO: Fix the sorting of the history, it's getting messed up somewhere and is out of order
-export function useWaitTimesData({ onRealtimeUpdate, isRealtimeConnected = true }: UseWaitTimesDataProps = {}) {
-    const [data, setData] = useState<WaitTimesResponse | null>(null);
+export function useWaitTimesData({ 
+    onRealtimeUpdate, 
+    isRealtimeConnected = true, 
+    initialData = null,
+    selectedRideId
+}: UseWaitTimesDataProps = {}) {
+    const [data, setData] = useState<WaitTimesResponse | null>(initialData);
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!initialData);
 
     const fetchData = useCallback(async (rideId?: string) => {
         try {
-            setIsLoading(true);
+            // Only set loading if we don't have any data yet
+            setIsLoading(prev => !prev && !data);
+            
             const url = rideId ? `/api/ride-wait-times?ride_id=${rideId}` : '/api/ride-wait-times';
             const response = await fetch(url, {
                 method: 'GET',
                 cache: 'default',
-                next: { revalidate: 20 } // Revalidate every 20 seconds
             });
 
             if (!response.ok) {
@@ -58,7 +66,7 @@ export function useWaitTimesData({ onRealtimeUpdate, isRealtimeConnected = true 
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [data]);
 
     // Polling function that doesn't set loading state and prevents duplicates
     const pollData = useCallback(async (rideId?: string) => {
@@ -67,7 +75,6 @@ export function useWaitTimesData({ onRealtimeUpdate, isRealtimeConnected = true 
             const response = await fetch(url, {
                 method: 'GET',
                 cache: 'default',
-                next: { revalidate: 20 } // Revalidate every 20 seconds
             });
 
             if (!response.ok) {
@@ -187,9 +194,21 @@ export function useWaitTimesData({ onRealtimeUpdate, isRealtimeConnected = true 
         });
     }, [onRealtimeUpdate]);
 
+    const hasData = !!data;
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        // If we have a selected ride but no history for it (or only partial history from the overview),
+        // fetch the full history for that specific ride.
+        if (selectedRideId && data) {
+            const hasHistory = data.groupedRidesHistory[selectedRideId] && data.groupedRidesHistory[selectedRideId].length > 10;
+            if (!hasHistory) {
+                console.log(`Fetching targeted history for selected ride: ${selectedRideId}`);
+                fetchData(selectedRideId);
+            }
+        } else if (!hasData) {
+            // Initial fetch if no data exists
+            fetchData();
+        }
+    }, [fetchData, selectedRideId, hasData, data]);
 
     // Polling as backup mechanism - only starts when live connection fails
     const REFRESH_INTERVAL = 300000; // 5 minutes (fallback polling)

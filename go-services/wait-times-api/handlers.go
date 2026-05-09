@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"go-services/shared"
 	"go-services/shared/models"
 	"go-services/shared/repository"
@@ -21,7 +22,7 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 		if AllowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		// Handle preflight
@@ -30,15 +31,15 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 			return
 		}
 
-		// Enforce POST for actual requests
-		if r.Method != http.MethodPost {
+		// Allow both GET and POST
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		// Determine optional ride_id — prefer query param, fallback to JSON body
+		// Determine optional ride_id — prefer query param, fallback to JSON body (only for POST)
 		rideID := r.URL.Query().Get("ride_id")
-		if rideID == "" {
+		if rideID == "" && r.Method == http.MethodPost {
 			// try JSON body (it's optional; ignore EOF / empty body)
 			var body struct {
 				RideID string `json:"ride_id"`
@@ -48,7 +49,27 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 			}
 		}
 
-		log.Printf("Processing wait times request (ride_id=%s)", rideID)
+		// Support window_hours query parameter to limit history data size
+		windowHoursStr := r.URL.Query().Get("window_hours")
+		windowHours := 0
+		if windowHoursStr != "" {
+			fmt.Sscanf(windowHoursStr, "%d", &windowHours)
+		}
+
+		// Default history window logic:
+		// 1. If window_hours is provided, use it.
+		// 2. If ride_id is provided, default to 24 hours (full detail for one ride).
+		// 3. If no ride_id and no window_hours, default to 4 hours (small payload for overview).
+		var historyWindow time.Duration
+		if windowHours > 0 {
+			historyWindow = time.Duration(windowHours) * time.Hour
+		} else if rideID != "" {
+			historyWindow = DataHours // 24 hours
+		} else {
+			historyWindow = 4 * time.Hour // Reduced default for overview
+		}
+
+		log.Printf("Processing wait times request (ride_id=%s, window=%v)", rideID, historyWindow)
 
 		// Query for latest entries for all rides (always unfiltered)
 		ctx, cancel := context.WithTimeout(context.Background(), RequestTimeout)
@@ -63,8 +84,8 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 
 		log.Printf("Retrieved %d latest ride data records for all rides", len(latestRideData))
 
-		// Query the ride_data_history table for data within the configured window
-		since := time.Now().Add(-DataHours)
+		// Query the ride_data_history table for data within the determined window
+		since := time.Now().Add(-historyWindow)
 		ctx2, cancel2 := context.WithTimeout(context.Background(), RequestTimeout)
 		defer cancel2()
 

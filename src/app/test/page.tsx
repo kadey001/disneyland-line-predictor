@@ -4,10 +4,15 @@ import { useState, useEffect } from 'react';
 import { WaitTimesResponse } from '@/lib/types';
 import WaitTimesClient from "@/components/wait-times-client";
 import DisneyLoader from '@/components/disney-loader';
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { IMPORTANT_DISNEYLAND_RIDES } from "@/lib/rides";
+import { TimeFilter } from "@/components/time-filter-selector";
 
 export default function TestPage() {
     const [data, setData] = useState<WaitTimesResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [selectedRideId, setSelectedRideId] = useLocalStorage<string>('selectedRideId', IMPORTANT_DISNEYLAND_RIDES[0].id);
+    const [timeFilter, setTimeFilter] = useLocalStorage<TimeFilter>('timeFilter', 'full-day');
 
     const fetchData = async (rideId?: string) => {
         try {
@@ -60,5 +65,11 @@ export default function TestPage() {
         </div>
     );
 
-    return <WaitTimesClient data={data} />;
+    return <WaitTimesClient 
+        data={data} 
+        selectedRideId={selectedRideId}
+        setSelectedRideId={setSelectedRideId}
+        timeFilter={timeFilter}
+        setTimeFilter={setTimeFilter}
+    />;
 }
