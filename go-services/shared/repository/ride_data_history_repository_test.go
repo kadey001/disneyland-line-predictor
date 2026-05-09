@@ -70,6 +70,7 @@ func TestRideDataHistoryRepository_Integration(t *testing.T) {
 	})
 
 	// Test InsertRideDataHistoryWithCounts
+	baseTime := time.Now().Truncate(time.Second).UTC()
 	t.Run("InsertRideDataHistoryWithCounts", func(t *testing.T) {
 		records := []*models.RideDataHistoryRecord{
 			{
@@ -79,9 +80,9 @@ func TestRideDataHistoryRepository_Integration(t *testing.T) {
 				EntityType:      "ATTRACTION",
 				Name:            "Space Mountain",
 				Status:          "OPERATING",
-				LastUpdated:     time.Now(),
-				CreatedAt:       time.Now(),
-				UpdatedAt:       time.Now(),
+				LastUpdated:     baseTime,
+				CreatedAt:       baseTime,
+				UpdatedAt:       baseTime,
 				OperatingHours:  "{}",
 				StandbyWaitTime: intPtr(30),
 				Forecast:        "{}",
@@ -93,9 +94,9 @@ func TestRideDataHistoryRepository_Integration(t *testing.T) {
 				EntityType:      "ATTRACTION",
 				Name:            "Pirates of the Caribbean",
 				Status:          "OPERATING",
-				LastUpdated:     time.Now(),
-				CreatedAt:       time.Now(),
-				UpdatedAt:       time.Now(),
+				LastUpdated:     baseTime,
+				CreatedAt:       baseTime,
+				UpdatedAt:       baseTime,
 				OperatingHours:  "{}",
 				StandbyWaitTime: intPtr(45),
 				Forecast:        "{}",
@@ -129,7 +130,7 @@ func TestRideDataHistoryRepository_Integration(t *testing.T) {
 
 	// Test GetRideDataHistorySince
 	t.Run("GetRideDataHistorySince", func(t *testing.T) {
-		since := time.Now().Add(-1 * time.Hour)
+		since := baseTime.Add(-1 * time.Hour)
 		records, err := repo.GetRideDataHistorySince(ctx, since)
 		assert.NoError(t, err)
 		assert.Len(t, records, 2)
@@ -178,9 +179,9 @@ func TestRideDataHistoryRepository_Integration(t *testing.T) {
 				EntityType:      "ATTRACTION",
 				Name:            "Space Mountain Updated",
 				Status:          "CLOSED",
-				LastUpdated:     time.Now(),
-				CreatedAt:       time.Now(),
-				UpdatedAt:       time.Now(),
+				LastUpdated:     baseTime, // Exact same timestamp
+				CreatedAt:       baseTime,
+				UpdatedAt:       baseTime,
 				OperatingHours:  "{}",
 				StandbyWaitTime: intPtr(0),
 				Forecast:        "{}",
@@ -225,7 +226,11 @@ func createTestTables(ctx context.Context, pool *pgxpool.Pool) error {
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			operating_hours JSONB,
 			standby_wait_time INTEGER,
-			forecast JSONB
+			return_time_state TEXT,
+			return_start TIMESTAMP WITH TIME ZONE,
+			return_end TIMESTAMP WITH TIME ZONE,
+			forecast JSONB,
+			UNIQUE (ride_id, last_updated)
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_ride_data_history_ride_id ON ride_data_history(ride_id);

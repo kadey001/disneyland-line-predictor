@@ -17,8 +17,8 @@ type RideDataHistoryRepository struct {
 
 // NewRideDataHistoryRepository creates a new repository instance
 func NewRideDataHistoryRepository() (*RideDataHistoryRepository, error) {
-	// Create connection using Supabase configuration
-	pool, err := db.NewSupabaseConnection(context.Background())
+	// Create connection using Cloud SQL configuration
+	pool, err := db.NewCloudSQLConnection(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database connection: %w", err)
 	}

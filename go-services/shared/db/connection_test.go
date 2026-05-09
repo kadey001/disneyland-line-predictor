@@ -22,19 +22,19 @@ func TestDefaultConfig(t *testing.T) {
 	}
 }
 
-func TestSupabaseConfig(t *testing.T) {
-	config := SupabaseConfig()
+func TestCloudSQLConfig(t *testing.T) {
+	config := CloudSQLConfig()
 
-	if config.MaxConns != 5 {
-		t.Errorf("Expected MaxConns to be 5, got %d", config.MaxConns)
+	if config.MaxConns != 10 {
+		t.Errorf("Expected MaxConns to be 10, got %d", config.MaxConns)
 	}
 
 	if config.MinConns != 1 {
 		t.Errorf("Expected MinConns to be 1, got %d", config.MinConns)
 	}
 
-	if config.MaxConnLifetime != 10*time.Minute {
-		t.Errorf("Expected MaxConnLifetime to be 10m, got %v", config.MaxConnLifetime)
+	if config.MaxConnLifetime != 30*time.Minute {
+		t.Errorf("Expected MaxConnLifetime to be 30m, got %v", config.MaxConnLifetime)
 	}
 }
 

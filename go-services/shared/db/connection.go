@@ -18,7 +18,7 @@ type Config struct {
 	MaxConnIdleTime time.Duration
 }
 
-// DefaultConfig returns a default configuration optimized for Supabase
+// DefaultConfig returns a default configuration for Cloud SQL
 func DefaultConfig() *Config {
 	return &Config{
 		MaxConns:        10,               // Reasonable default for most applications
@@ -28,13 +28,14 @@ func DefaultConfig() *Config {
 	}
 }
 
-// SupabaseConfig returns a configuration optimized for Supabase with stricter limits
-func SupabaseConfig() *Config {
+// CloudSQLConfig returns a configuration for Cloud SQL with conservative limits
+// Suitable for db-f1-micro shared-core instances
+func CloudSQLConfig() *Config {
 	return &Config{
-		MaxConns:        5,                // More conservative for Supabase
+		MaxConns:        10,               // Conservative for shared-core instances
 		MinConns:        1,                // Keep at least one connection
-		MaxConnLifetime: 10 * time.Minute, // Shorter lifetime for Supabase
-		MaxConnIdleTime: 2 * time.Minute,  // Close idle connections faster
+		MaxConnLifetime: 30 * time.Minute, // Standard lifetime
+		MaxConnIdleTime: 5 * time.Minute,  // Close idle connections
 	}
 }
 
@@ -81,9 +82,9 @@ func NewDefaultConnection(ctx context.Context) (*pgxpool.Pool, error) {
 	return NewConnection(ctx, DefaultConfig())
 }
 
-// NewSupabaseConnection creates a new connection optimized for Supabase
-func NewSupabaseConnection(ctx context.Context) (*pgxpool.Pool, error) {
-	return NewConnection(ctx, SupabaseConfig())
+// NewCloudSQLConnection creates a new connection for Cloud SQL
+func NewCloudSQLConnection(ctx context.Context) (*pgxpool.Pool, error) {
+	return NewConnection(ctx, CloudSQLConfig())
 }
 
 // HealthCheck verifies that the database connection is healthy

@@ -67,7 +67,8 @@ func setupTestDatabase(t *testing.T) (*pgxpool.Pool, func()) {
 			return_time_state TEXT,
 			return_start TIMESTAMP WITH TIME ZONE,
 			return_end TIMESTAMP WITH TIME ZONE,
-			forecast JSONB
+			forecast JSONB,
+			UNIQUE (ride_id, last_updated)
 		);
 
 		CREATE INDEX IF NOT EXISTS idx_ride_data_history_external_park
@@ -96,6 +97,7 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 
 	repo := newRideDataHistoryRepositoryForTest(pool)
 	ctx := context.Background()
+	baseTime := time.Now().Truncate(time.Second).UTC()
 
 	tests := []struct {
 		name         string
@@ -133,7 +135,7 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 			}{inserted: 1, skipped: 0},
 		},
 		{
-			name: "skip duplicate records within 5 minutes",
+			name: "skip exact duplicate records",
 			records: []*models.RideDataHistoryRecord{
 				{
 					RideID:          "ride1",
@@ -142,14 +144,14 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 					EntityType:      "ATTRACTION",
 					Name:            "Space Mountain",
 					Status:          "OPERATING",
-					LastUpdated:     time.Now().Add(2 * time.Minute), // Only 2 minutes newer
-					CreatedAt:       time.Now(),
-					UpdatedAt:       time.Now(),
+					LastUpdated:     baseTime, // Exact same timestamp
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
 					OperatingHours:  "[]",
 					StandbyWaitTime: &[]int{45}[0],
 					ReturnTimeState: &[]string{"AVAILABLE"}[0],
-					ReturnStart:     func() *time.Time { t := time.Now().Add(time.Hour); return &t }(),
-					ReturnEnd:       func() *time.Time { t := time.Now().Add(2 * time.Hour); return &t }(),
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
 					Forecast:        "[]",
 				},
 			},
@@ -165,14 +167,14 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 					EntityType:      "ATTRACTION",
 					Name:            "Space Mountain",
 					Status:          "OPERATING",
-					LastUpdated:     time.Now(),
-					CreatedAt:       time.Now(),
-					UpdatedAt:       time.Now(),
+					LastUpdated:     baseTime,
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
 					OperatingHours:  "[]",
 					StandbyWaitTime: &[]int{45}[0],
 					ReturnTimeState: &[]string{"AVAILABLE"}[0],
-					ReturnStart:     func() *time.Time { t := time.Now().Add(time.Hour); return &t }(),
-					ReturnEnd:       func() *time.Time { t := time.Now().Add(2 * time.Hour); return &t }(),
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
 					Forecast:        "[]",
 				},
 			},

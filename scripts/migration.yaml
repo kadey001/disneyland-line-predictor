@@ -1,0 +1,18 @@
+steps:
+  # 1. Export from Supabase
+  - name: 'postgres:15'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        export PGPASSWORD='4!s3SI*S75tC*P3w'
+        pg_dump -h db.sfgsgxjaovjkepqwgtbf.supabase.co -U postgres -d postgres -F c -f /workspace/supabase_migration.dump
+
+  # 2. Import to Cloud SQL
+  - name: 'postgres:15'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        export PGPASSWORD='2c2AFxclqlGa1daORt7nAFLA'
+        pg_restore -h 34.186.178.184 -U app -d wait_times --no-owner --no-privileges /workspace/supabase_migration.dump
