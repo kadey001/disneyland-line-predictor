@@ -60,6 +60,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --remove-env-vars DATABASE_URL \
           --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
 
@@ -100,6 +101,7 @@ jobs:
           --cpu 1 \
           --concurrency 80 \
           --timeout 300 \
+          --remove-env-vars DATABASE_URL \
           --update-secrets DATABASE_URL=database-connection-string:latest \
           --update-env-vars ENV=production
 
