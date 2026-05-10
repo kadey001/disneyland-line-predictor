@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -49,6 +50,9 @@ func NewConnection(ctx context.Context, config *Config) (*pgxpool.Pool, error) {
 			return nil, fmt.Errorf("DATABASE_URL environment variable is required")
 		}
 	}
+
+	// Defensively trim whitespace and control characters
+	databaseURL = strings.TrimSpace(databaseURL)
 
 	// Parse the database URL
 	poolConfig, err := pgxpool.ParseConfig(databaseURL)
