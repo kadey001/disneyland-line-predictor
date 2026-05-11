@@ -7,7 +7,6 @@ interface UseWaitTimesDataProps {
     selectedRideId?: string;
 }
 
-// TODO: Fix the sorting of the history, it's getting messed up somewhere and is out of order
 export function useWaitTimesData({ 
     initialData = null,
     selectedRideId
@@ -37,7 +36,7 @@ export function useWaitTimesData({
             console.log(`Data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
             console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
 
-            // Convert UTC timestamps to local timezone for initial data load
+            // Convert UTC timestamps to local timezone and ensure chronological sorting
             const convertedData: WaitTimesResponse = {
                 ...responseData,
                 liveWaitTime: responseData.liveWaitTime?.map(ride => ({
@@ -45,10 +44,14 @@ export function useWaitTimesData({
                     lastUpdated: ride.lastUpdated
                 })),
                 groupedRidesHistory: Object.keys(responseData.groupedRidesHistory || {}).reduce((acc, rideId) => {
-                    acc[rideId] = responseData.groupedRidesHistory![rideId].map(entry => ({
-                        ...entry,
-                        snapshotTime: entry.snapshotTime
-                    }));
+                    const sortedHistory = [...(responseData.groupedRidesHistory![rideId] || [])]
+                        .map(entry => ({
+                            ...entry,
+                            snapshotTime: entry.snapshotTime
+                        }))
+                        .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
+                    
+                    acc[rideId] = sortedHistory;
                     return acc;
                 }, {} as WaitTimesResponse['groupedRidesHistory'])
             };
@@ -107,18 +110,31 @@ export function useWaitTimesData({
                     lastUpdated: ride.lastUpdated
                 })) || [];
 
-                // For history data, be conservative - only update if we have no history for a ride
+                // Merge history data - append new points and deduplicate by snapshotTime
                 const mergedHistory = { ...prevData.groupedRidesHistory };
                 Object.keys(responseData.groupedRidesHistory || {}).forEach(rideId => {
-                    if (!mergedHistory[rideId] || mergedHistory[rideId].length === 0) {
-                        // Only add history if we don't have any for this ride, and convert timestamps
-                        mergedHistory[rideId] = responseData.groupedRidesHistory![rideId].map(entry => {
-                            return {
-                                ...entry,
-                                snapshotTime: entry.snapshotTime
-                            };
+                    const existingRideHistory = mergedHistory[rideId] || [];
+                    const newRideHistory = responseData.groupedRidesHistory![rideId] || [];
+                    
+                    // Use a Map to deduplicate by snapshotTime
+                    const historyMap = new Map();
+                    
+                    // Add existing entries
+                    existingRideHistory.forEach(entry => {
+                        historyMap.set(entry.snapshotTime, entry);
+                    });
+                    
+                    // Add new entries (they will overwrite if the timestamp is exactly the same)
+                    newRideHistory.forEach(entry => {
+                        historyMap.set(entry.snapshotTime, {
+                            ...entry,
+                            snapshotTime: entry.snapshotTime
                         });
-                    }
+                    });
+                    
+                    // Convert back to array and sort chronologically
+                    mergedHistory[rideId] = Array.from(historyMap.values())
+                        .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
                 });
 
                 return {
