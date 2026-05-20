@@ -5,11 +5,12 @@ This directory contains Terraform configurations for deploying the Disneyland Li
 ## Overview
 
 The Terraform configuration manages the following resources:
-- Google Cloud Functions for the Go microservices
-- Cloud Storage buckets for function source code
+- Google Cloud Run services for the Go microservices
+- Cloud SQL PostgreSQL instance for data storage
+- Artifact Registry for Docker images
 - IAM roles and permissions
-- API Gateway (if needed)
-- Cloud Build triggers for CI/CD
+- Cloud Scheduler for periodic data collection
+- Secret Manager for database credentials
 
 ## Prerequisites
 
@@ -52,21 +53,21 @@ region     = "us-central1"
 
 ## Resources Created
 
-### Live Data Collector Function
-- **Function Name**: `live-data-collector`
-- **Trigger**: HTTP requests
-- **Runtime**: Go 1.21
+### Cloud SQL Instance
+- **Instance Name**: `wait-times-db`
+- **Database Version**: PostgreSQL 15
+- **Tier**: `db-f1-micro` (cost-optimized)
+
+### Live Data Collector Service (Cloud Run)
+- **Service Name**: `live-data-collector-service`
 - **Purpose**: Collects live wait time data from external APIs
 
-### Wait Times API Function
-- **Function Name**: `wait-times-api`
-- **Trigger**: HTTP requests
-- **Runtime**: Go 1.21
+### Wait Times API Service (Cloud Run)
+- **Service Name**: `wait-times-api`
 - **Purpose**: Serves wait time data via REST API
 
-### Storage Buckets
-- Source code storage for Cloud Functions
-- Automatic versioning enabled
+### Artifact Registry
+- Docker repository for service images
 
 ## Deployment Scripts
 
@@ -76,15 +77,33 @@ The `../scripts/` directory contains deployment scripts that work with this Terr
 - `deploy-wait-times-api.sh` - Deploy the wait times API function
 - `deploy-all.sh` - Deploy all services
 
+## Local Database Access
+
+For security, the database is not accessible via public IP without the Cloud SQL Auth Proxy. To connect from your local machine:
+
+1. **Install the Cloud SQL Auth Proxy**:
+   Download it from [Google Cloud documentation](https://cloud.google.com/sql/docs/postgres/sql-proxy#install).
+
+2. **Start the Proxy**:
+   ```bash
+   # Replace PROJECT_ID and REGION with your values
+   ./cloud-sql-proxy PROJECT_ID:REGION:wait-times-db
+   ```
+
+3. **Connect via Localhost**:
+   The proxy will listen on `127.0.0.1:5432`. You can now use your `DATABASE_URL` from `.env`:
+   `postgresql://app:PASSWORD@localhost:5432/wait_times`
+
 ## Environment Variables
 
-The functions require the following environment variables:
+The services require the following environment variables:
 - `DATABASE_URL` - PostgreSQL connection string
 
 ## Monitoring
 
-After deployment, you can monitor your functions in the Google Cloud Console:
-- [Cloud Functions](https://console.cloud.google.com/functions)
+After deployment, you can monitor your services in the Google Cloud Console:
+- [Cloud Run](https://console.cloud.google.com/run)
+- [Cloud SQL](https://console.cloud.google.com/sql/instances)
 - [Cloud Logging](https://console.cloud.google.com/logs)
 - [Cloud Monitoring](https://console.cloud.google.com/monitoring)
 
@@ -92,15 +111,15 @@ After deployment, you can monitor your functions in the Google Cloud Console:
 
 ### Common Issues
 
-1. **Permission Denied**: Ensure your account has the necessary IAM roles
-2. **Function Timeout**: Check function logs and consider increasing timeout limits
-3. **Database Connection**: Verify DATABASE_URL is correctly set and accessible
+1. **Permission Denied**: Ensure your account has the `roles/cloudsql.client` role.
+2. **Connection Refused**: Ensure the Cloud SQL Auth Proxy is running locally.
+3. **Database Connection**: Verify `DATABASE_URL` in Secret Manager is correctly formatted for Cloud Run (using the UNIX socket).
 
 ### Logs
 
-View function logs:
+View service logs:
 ```bash
-gcloud functions logs read FUNCTION_NAME --region=REGION
+gcloud beta run services logs read SERVICE_NAME --region=REGION
 ```
 
 ## Cost Optimization

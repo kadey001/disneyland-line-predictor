@@ -87,7 +87,7 @@ The app will automatically use real-time subscriptions when Supabase is configur
 ## Deployment
 
 - **Development**: Docker Compose
-- **Production**: Google Cloud Functions (Go services), Vercel (Next.js frontend)
+- **Production**: Google Cloud Run (Go services), Vercel (Next.js frontend), Cloud SQL (PostgreSQL)
 
 ## Features
 

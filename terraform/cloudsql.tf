@@ -35,14 +35,10 @@ resource "google_sql_database_instance" "wait_times_db" {
     }
 
     ip_configuration {
-      ipv4_enabled = true # Public IP for Cloud Run access
+      ipv4_enabled = true # Required for access via Cloud SQL Auth Proxy
 
       # Cloud Run connects via Cloud SQL Auth Proxy (no authorized networks needed)
-      # But allow for local development access
-      authorized_networks {
-        name  = "allow-all"
-        value = "0.0.0.0/0"
-      }
+      # For local development, use the Cloud SQL Auth Proxy CLI (see terraform/README.md)
     }
 
     maintenance_window {
