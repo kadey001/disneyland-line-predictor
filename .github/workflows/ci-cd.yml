@@ -65,7 +65,7 @@ jobs:
     name: Cleanup
     runs-on: ubuntu-latest
     if: always()
-    needs: [test-and-build, security-scan, deploy-frontend]
+    needs: [test-and-build]
 
     steps:
     - name: Cleanup artifacts
