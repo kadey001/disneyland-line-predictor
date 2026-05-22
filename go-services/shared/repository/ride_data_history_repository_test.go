@@ -432,6 +432,7 @@ func TestRideDataHistoryRepository_GetRideDataHistorySince(t *testing.T) {
 func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts(t *testing.T) {
 	mockRepo := NewMockRideDataHistoryRepository()
 	ctx := context.Background()
+	baseTime := time.Now().Truncate(time.Second).UTC()
 
 	// Test inserting new records
 	testRecords := []*models.RideDataHistoryRecord{
@@ -442,9 +443,9 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts(t *testing.T)
 			EntityType:      "ATTRACTION",
 			Name:            "Test Ride",
 			Status:          "OPERATING",
-			LastUpdated:     time.Now(),
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			LastUpdated:     baseTime,
+			CreatedAt:       baseTime,
+			UpdatedAt:       baseTime,
 			OperatingHours:  "{}",
 			StandbyWaitTime: intPtr(30),
 			Forecast:        "{}",
@@ -456,9 +457,9 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts(t *testing.T)
 			EntityType:      "ATTRACTION",
 			Name:            "Test Ride 2",
 			Status:          "OPERATING",
-			LastUpdated:     time.Now(),
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			LastUpdated:     baseTime,
+			CreatedAt:       baseTime,
+			UpdatedAt:       baseTime,
 			OperatingHours:  "{}",
 			StandbyWaitTime: intPtr(45),
 			Forecast:        "{}",
@@ -487,44 +488,91 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts(t *testing.T)
 		t.Errorf("Expected 2 records in repository, got %d", len(allRecords))
 	}
 
-	// Test inserting duplicate records (same external_id and park_id)
+	// Test 1: Insert exact duplicate (same RideID, same state, within 5 mins)
 	duplicateRecords := []*models.RideDataHistoryRecord{
 		{
-			RideID:          "test-ride-789", // Different ride ID
-			ExternalID:      "external-123",  // Same external ID
-			ParkID:          "test-park-123", // Same park ID
+			RideID:          "test-ride-123",
+			ExternalID:      "external-123",
+			ParkID:          "test-park-123",
 			EntityType:      "ATTRACTION",
-			Name:            "Duplicate Test Ride",
+			Name:            "Test Ride",
 			Status:          "OPERATING",
-			LastUpdated:     time.Now(),
-			CreatedAt:       time.Now(),
-			UpdatedAt:       time.Now(),
+			LastUpdated:     baseTime.Add(2 * time.Minute), // 2 minutes later, same state
+			CreatedAt:       baseTime,
+			UpdatedAt:       baseTime,
 			OperatingHours:  "{}",
-			StandbyWaitTime: intPtr(60),
+			StandbyWaitTime: intPtr(30),
 			Forecast:        "{}",
 		},
 	}
 
 	inserted, skipped, err = mockRepo.InsertRideDataHistoryWithCounts(ctx, duplicateRecords)
 	if err != nil {
-		t.Fatalf("Failed to insert duplicate ride data: %v", err)
+		t.Fatalf("Failed to insert duplicate: %v", err)
+	}
+	if inserted != 0 || skipped != 1 {
+		t.Errorf("Expected 0 inserted, 1 skipped for duplicate within 5 mins, got %d inserted, %d skipped", inserted, skipped)
 	}
 
-	if inserted != 0 {
-		t.Errorf("Expected 0 inserted for duplicate, got %d", inserted)
-	}
-	if skipped != 1 {
-		t.Errorf("Expected 1 skipped for duplicate, got %d", skipped)
+	// Test 2: Insert identical state after 5+ minutes
+	olderRecords := []*models.RideDataHistoryRecord{
+		{
+			RideID:          "test-ride-123",
+			ExternalID:      "external-123",
+			ParkID:          "test-park-123",
+			EntityType:      "ATTRACTION",
+			Name:            "Test Ride",
+			Status:          "OPERATING",
+			LastUpdated:     baseTime.Add(6 * time.Minute), // 6 minutes later, same state
+			CreatedAt:       baseTime,
+			UpdatedAt:       baseTime,
+			OperatingHours:  "{}",
+			StandbyWaitTime: intPtr(30),
+			Forecast:        "{}",
+		},
 	}
 
-	// Verify total count is still 2 (duplicate was skipped)
+	inserted, skipped, err = mockRepo.InsertRideDataHistoryWithCounts(ctx, olderRecords)
+	if err != nil {
+		t.Fatalf("Failed to insert older record: %v", err)
+	}
+	if inserted != 1 || skipped != 0 {
+		t.Errorf("Expected 1 inserted, 0 skipped for same state after 6 mins, got %d inserted, %d skipped", inserted, skipped)
+	}
+
+	// Test 3: Insert state change (different wait time) within 5 minutes of last insert
+	stateChangeRecords := []*models.RideDataHistoryRecord{
+		{
+			RideID:          "test-ride-123",
+			ExternalID:      "external-123",
+			ParkID:          "test-park-123",
+			EntityType:      "ATTRACTION",
+			Name:            "Test Ride",
+			Status:          "OPERATING",
+			LastUpdated:     baseTime.Add(8 * time.Minute), // 2 minutes after last insert, but wait time changed
+			CreatedAt:       baseTime,
+			UpdatedAt:       baseTime,
+			OperatingHours:  "{}",
+			StandbyWaitTime: intPtr(40), // 30 -> 40 wait time change
+			Forecast:        "{}",
+		},
+	}
+
+	inserted, skipped, err = mockRepo.InsertRideDataHistoryWithCounts(ctx, stateChangeRecords)
+	if err != nil {
+		t.Fatalf("Failed to insert state change record: %v", err)
+	}
+	if inserted != 1 || skipped != 0 {
+		t.Errorf("Expected 1 inserted, 0 skipped for state change within 5 mins, got %d inserted, %d skipped", inserted, skipped)
+	}
+
+	// Verify total count in mock repository (2 base + 1 after 20 min + 1 state change = 4 total)
 	allRecords, err = mockRepo.GetAllRideDataHistory(ctx)
 	if err != nil {
 		t.Fatalf("Failed to get all records: %v", err)
 	}
-
-	if len(allRecords) != 2 {
-		t.Errorf("Expected still 2 records after duplicate insert, got %d", len(allRecords))
+	if len(allRecords) != 4 {
+		t.Errorf("Expected 4 records in mock repo, got %d", len(allRecords))
 	}
 }
 
@@ -540,22 +588,44 @@ func NewMockRideDataHistoryRepository() *MockRideDataHistoryRepository {
 }
 
 func (m *MockRideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.Context, records []*models.RideDataHistoryRecord) (inserted int, skipped int, err error) {
+	// Deduplicate by RideID in the input batch, keeping the most recent
+	latestRecords := make(map[string]*models.RideDataHistoryRecord)
 	for _, record := range records {
-		// Check if record already exists (simple mock logic)
-		exists := false
+		key := record.RideID
+		if existing, ok := latestRecords[key]; ok {
+			if record.LastUpdated.After(existing.LastUpdated) {
+				latestRecords[key] = record
+			}
+		} else {
+			latestRecords[key] = record
+		}
+	}
+
+	for _, record := range latestRecords {
+		record.UpdatedAt = time.Now()
+
+		// Find the latest record in m.records for this RideID
+		var dbRec *models.RideDataHistoryRecord
 		for _, existing := range m.records {
-			if existing.ExternalID == record.ExternalID && existing.ParkID == record.ParkID {
-				exists = true
-				break
+			if existing.RideID == record.RideID {
+				if dbRec == nil || existing.LastUpdated.After(dbRec.LastUpdated) {
+					dbRec = existing
+				}
 			}
 		}
 
-		if !exists {
-			m.records = append(m.records, record)
-			inserted++
-		} else {
-			skipped++
+		if dbRec != nil {
+			if isRideStateIdentical(dbRec, record) {
+				age := record.LastUpdated.Sub(dbRec.LastUpdated)
+				if age < 5*time.Minute {
+					skipped++
+					continue
+				}
+			}
 		}
+
+		m.records = append(m.records, record)
+		inserted++
 	}
 	return inserted, skipped, nil
 }

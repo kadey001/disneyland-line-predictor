@@ -28,18 +28,77 @@ func NewRideDataHistoryRepository() (*RideDataHistoryRepository, error) {
 	}, nil
 }
 
+// Helper functions to check pointer equality for various types
+func intPtrEqual(a, b *int) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func stringPtrEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func timePtrEqual(a, b *time.Time) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Equal(*b)
+}
+
+// isRideStateIdentical checks if two records are identical in wait time, status, and return time state.
+func isRideStateIdentical(r1, r2 *models.RideDataHistoryRecord) bool {
+	if r1.Status != r2.Status {
+		return false
+	}
+	if !intPtrEqual(r1.StandbyWaitTime, r2.StandbyWaitTime) {
+		return false
+	}
+	if !stringPtrEqual(r1.ReturnTimeState, r2.ReturnTimeState) {
+		return false
+	}
+	if !timePtrEqual(r1.ReturnStart, r2.ReturnStart) {
+		return false
+	}
+	if !timePtrEqual(r1.ReturnEnd, r2.ReturnEnd) {
+		return false
+	}
+	return true
+}
+
 // InsertRideDataHistoryWithCounts inserts new ride data history records and returns counts of inserted/skipped
 func (r *RideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.Context, records []*models.RideDataHistoryRecord) (inserted int, skipped int, err error) {
 	if len(records) == 0 {
 		return 0, 0, nil
 	}
 
-	// For bulk upsert, we'll do an INSERT ... ON CONFLICT DO UPDATE
-	// But first we need to make sure we don't have multiple entries for the same ride in this batch
-	// So we'll pick the most recent record per ride from the input batch.
+	// Fetch the latest database record for each ride to check state differences and age
+	latestDBRecords, err := r.GetLatestRideDataForAllRides(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to fetch latest ride data: %w", err)
+	}
+	dbLatestMap := make(map[string]*models.RideDataHistoryRecord)
+	for _, rec := range latestDBRecords {
+		dbLatestMap[rec.RideID] = rec
+	}
+
+		// Deduplicate by RideID in the input batch, keeping the most recent
 	latestRecords := make(map[string]*models.RideDataHistoryRecord)
 	for _, record := range records {
-		key := record.ExternalID + "|" + record.ParkID
+		key := record.RideID
 		if existing, ok := latestRecords[key]; ok {
 			if record.LastUpdated.After(existing.LastUpdated) {
 				latestRecords[key] = record
@@ -47,6 +106,11 @@ func (r *RideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.
 		} else {
 			latestRecords[key] = record
 		}
+	}
+
+	// Set updated timestamp
+	for _, record := range latestRecords {
+		record.UpdatedAt = time.Now()
 	}
 
 	// Begin transaction
@@ -57,7 +121,16 @@ func (r *RideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.
 	defer tx.Rollback(ctx)
 
 	for _, record := range latestRecords {
-		record.UpdatedAt = time.Now()
+		// Throttle logic: check if the state is identical and it has been less than 5 minutes since the last insert
+		if dbRec, exists := dbLatestMap[record.RideID]; exists {
+			if isRideStateIdentical(dbRec, record) {
+				age := record.LastUpdated.Sub(dbRec.LastUpdated)
+				if age < 5*time.Minute {
+					skipped++
+					continue
+				}
+			}
+		}
 
 		insertQuery := `
 			INSERT INTO ride_data_history (
@@ -81,6 +154,7 @@ func (r *RideDataHistoryRepository) InsertRideDataHistoryWithCounts(ctx context.
 		
 		if tag.RowsAffected() > 0 {
 			inserted++
+			dbLatestMap[record.RideID] = record
 		} else {
 			skipped++
 		}

@@ -125,7 +125,7 @@ func (entry *LiveRideDataEntry) ToRideDataHistoryRecord() (*RideDataHistoryRecor
 		EntityType:  string(entry.EntityType),
 		Name:        entry.Name,
 		Status:      string(entry.Status),
-		LastUpdated: entry.LastUpdated,
+		LastUpdated: time.Now().UTC().Truncate(time.Minute),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

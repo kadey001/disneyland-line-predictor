@@ -224,6 +224,96 @@ func TestRideDataHistoryRepository_InsertRideDataHistoryWithCounts_Integration(t
 				skipped  int
 			}{inserted: 1, skipped: 0},
 		},
+		{
+			name: "skip identical state within 5 minutes",
+			setupRecords: []*models.RideDataHistoryRecord{
+				{
+					RideID:          "ride1",
+					ExternalID:      "ext1",
+					ParkID:          "park1",
+					EntityType:      "ATTRACTION",
+					Name:            "Space Mountain",
+					Status:          "OPERATING",
+					LastUpdated:     baseTime,
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
+					OperatingHours:  "[]",
+					StandbyWaitTime: &[]int{45}[0],
+					ReturnTimeState: &[]string{"AVAILABLE"}[0],
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
+					Forecast:        "[]",
+				},
+			},
+			records: []*models.RideDataHistoryRecord{
+				{
+					RideID:          "ride1",
+					ExternalID:      "ext1",
+					ParkID:          "park1",
+					EntityType:      "ATTRACTION",
+					Name:            "Space Mountain",
+					Status:          "OPERATING",
+					LastUpdated:     baseTime.Add(3 * time.Minute), // 3 minutes newer, identical state
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
+					OperatingHours:  "[]",
+					StandbyWaitTime: &[]int{45}[0],
+					ReturnTimeState: &[]string{"AVAILABLE"}[0],
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
+					Forecast:        "[]",
+				},
+			},
+			expected: struct {
+				inserted int
+				skipped  int
+			}{inserted: 0, skipped: 1},
+		},
+		{
+			name: "insert identical state after 5 minutes",
+			setupRecords: []*models.RideDataHistoryRecord{
+				{
+					RideID:          "ride1",
+					ExternalID:      "ext1",
+					ParkID:          "park1",
+					EntityType:      "ATTRACTION",
+					Name:            "Space Mountain",
+					Status:          "OPERATING",
+					LastUpdated:     baseTime,
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
+					OperatingHours:  "[]",
+					StandbyWaitTime: &[]int{45}[0],
+					ReturnTimeState: &[]string{"AVAILABLE"}[0],
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
+					Forecast:        "[]",
+				},
+			},
+			records: []*models.RideDataHistoryRecord{
+				{
+					RideID:          "ride1",
+					ExternalID:      "ext1",
+					ParkID:          "park1",
+					EntityType:      "ATTRACTION",
+					Name:            "Space Mountain",
+					Status:          "OPERATING",
+					LastUpdated:     baseTime.Add(6 * time.Minute), // 6 minutes newer, identical state
+					CreatedAt:       baseTime,
+					UpdatedAt:       baseTime,
+					OperatingHours:  "[]",
+					StandbyWaitTime: &[]int{45}[0],
+					ReturnTimeState: &[]string{"AVAILABLE"}[0],
+					ReturnStart:     func() *time.Time { t := baseTime.Add(time.Hour); return &t }(),
+					ReturnEnd:       func() *time.Time { t := baseTime.Add(2 * time.Hour); return &t }(),
+					Forecast:        "[]",
+				},
+			},
+			expected: struct {
+				inserted int
+				skipped  int
+			}{inserted: 1, skipped: 0},
+		},
 	}
 
 	for _, tt := range tests {
