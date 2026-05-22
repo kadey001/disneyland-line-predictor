@@ -226,8 +226,6 @@ resource "google_cloud_run_service_iam_member" "wait_times_api_public_access" {
   member   = "allUsers"
 }
 
-
-
 # Create a service account for Cloud Scheduler
 resource "google_service_account" "scheduler_sa" {
   account_id   = "wait-times-scheduler-sa"

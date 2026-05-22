@@ -40,7 +40,7 @@ output "scheduler_service_account_email" {
 
 output "cost_optimization_notes" {
   description = "Cost optimization measures implemented"
-  value = <<EOF
+  value       = <<EOF
 DEV ENVIRONMENT COST OPTIMIZATIONS:
 - CPU: 0.5 cores, Memory: 256Mi per service
 - Min instances: 0 (pay-per-request)
