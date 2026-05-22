@@ -57,7 +57,7 @@ jobs:
         echo "Building Wait Times API with tag: ${{ github.sha }}"
         docker build -f wait-times-api/Dockerfile \
           -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/wait-times-api:${{ github.sha }} \
-          wait-times-api/
+          .
         docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/wait-times-api:${{ github.sha }}
 
     - name: Build and push Live Data Collector
@@ -66,7 +66,7 @@ jobs:
         echo "Building Live Data Collector with tag: ${{ github.sha }}"
         docker build -f live-data-collector-service/Dockerfile \
           -t ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector-service:${{ github.sha }} \
-          live-data-collector-service/
+          .
         docker push ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/live-data-collector-service:${{ github.sha }}
 
   terraform-deploy:
