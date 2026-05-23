@@ -9,6 +9,9 @@ on:
 env:
   NODE_VERSION: '20'
   GO_VERSION: '1.23'
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  WAIT_TIMES_API_URL: ${{ vars.WAIT_TIMES_API_URL }}
+  NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
 
 jobs:
   test-and-build:
