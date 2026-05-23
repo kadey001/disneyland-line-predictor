@@ -17,6 +17,11 @@ resource "google_project_service" "artifact_registry" {
   service = "artifactregistry.googleapis.com"
 }
 
+resource "google_project_service" "iam" {
+  project = var.project_id
+  service = "iam.googleapis.com"
+}
+
 resource "google_project_service" "secret_manager" {
   project = var.project_id
   service = "secretmanager.googleapis.com"
@@ -57,6 +62,8 @@ resource "google_service_account" "cloud_run_sa" {
   account_id   = "wait-times-cloud-run-sa"
   display_name = "Wait Times Cloud Run Service Account"
   description  = "Service account for the wait times Cloud Run services"
+
+  depends_on = [google_project_service.iam]
 }
 
 # Grant necessary permissions to the service account
@@ -231,6 +238,8 @@ resource "google_service_account" "scheduler_sa" {
   account_id   = "wait-times-scheduler-sa"
   display_name = "Wait Times Cloud Scheduler Service Account"
   description  = "Service account for Cloud Scheduler to invoke live data collector"
+
+  depends_on = [google_project_service.iam]
 }
 
 # Grant Cloud Scheduler service account permission to invoke Cloud Run services

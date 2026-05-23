@@ -7,6 +7,12 @@ resource "google_project_service" "sqladmin" {
   service = "sqladmin.googleapis.com"
 }
 
+# Enable Compute Engine API (often required for Cloud SQL networking)
+resource "google_project_service" "compute" {
+  project = var.project_id
+  service = "compute.googleapis.com"
+}
+
 # Cloud SQL PostgreSQL instance
 resource "google_sql_database_instance" "wait_times_db" {
   name             = "wait-times-db"
@@ -55,7 +61,10 @@ resource "google_sql_database_instance" "wait_times_db" {
 
   deletion_protection = true
 
-  depends_on = [google_project_service.sqladmin]
+  depends_on = [
+    google_project_service.sqladmin,
+    google_project_service.compute
+  ]
 }
 
 # Application database
