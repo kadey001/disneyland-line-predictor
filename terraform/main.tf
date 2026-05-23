@@ -247,7 +247,7 @@ resource "google_cloud_scheduler_job" "data_collection_job" {
   description      = "Collects live wait time data from Disney parks"
   schedule         = var.data_collection_schedule
   time_zone        = var.scheduler_timezone
-  attempt_deadline = "320s"  # 5 minutes and 20 seconds deadline
+  attempt_deadline = "320s" # 5 minutes and 20 seconds deadline
   region           = var.region
 
   retry_config {
@@ -257,11 +257,11 @@ resource "google_cloud_scheduler_job" "data_collection_job" {
   http_target {
     http_method = "POST"
     uri         = "${google_cloud_run_v2_service.live_data_collector.uri}/collect"
-    
+
     body = base64encode(jsonencode({
       parkIds = [
-        "7340550b-c14d-4def-80bb-acdb51d49a66",  # Disneyland
-        "832fcd51-ea19-4e77-85c7-75d5843b127c"   # Disney California Adventure
+        "7340550b-c14d-4def-80bb-acdb51d49a66", # Disneyland
+        "832fcd51-ea19-4e77-85c7-75d5843b127c"  # Disney California Adventure
       ]
     }))
 

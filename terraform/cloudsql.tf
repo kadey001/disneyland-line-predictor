@@ -19,14 +19,14 @@ resource "google_sql_database_instance" "wait_times_db" {
     edition           = "ENTERPRISE"
     availability_type = "ZONAL" # Single zone, cheapest option
 
-    disk_size             = 10  # 10 GB SSD (minimum)
+    disk_size             = 10 # 10 GB SSD (minimum)
     disk_type             = "PD_SSD"
     disk_autoresize       = true
     disk_autoresize_limit = 50 # Cap at 50 GB to control costs
 
     backup_configuration {
       enabled                        = true
-      point_in_time_recovery_enabled = false # Saves cost
+      point_in_time_recovery_enabled = false   # Saves cost
       start_time                     = "03:00" # 3 AM UTC
 
       backup_retention_settings {
