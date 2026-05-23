@@ -45,13 +45,24 @@ const environmentSchema = z.object({
     }
 });
 
+// Helper to clean environment variables (stripping quotes and whitespace)
+const cleanEnvVar = (val: string | undefined): string => {
+    if (!val) return '';
+    let cleaned = val.trim();
+    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
+        (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+        cleaned = cleaned.slice(1, -1).trim();
+    }
+    return cleaned;
+};
+
 // Parse and validate environment variables
 const envData = {
     NODE_ENV: process.env.NODE_ENV,
-    DATABASE_URL: process.env.DATABASE_URL || '',
-    WAIT_TIMES_API_URL: process.env.WAIT_TIMES_API_URL || 'https://wait-times-api-602235714983.us-west2.run.app',
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    DATABASE_URL: cleanEnvVar(process.env.DATABASE_URL),
+    WAIT_TIMES_API_URL: cleanEnvVar(process.env.WAIT_TIMES_API_URL || 'https://wait-times-api-602235714983.us-west2.run.app'),
+    NEXTAUTH_SECRET: cleanEnvVar(process.env.NEXTAUTH_SECRET),
+    NEXTAUTH_URL: cleanEnvVar(process.env.NEXTAUTH_URL),
 };
 
 // Validate environment
