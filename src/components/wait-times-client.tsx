@@ -5,9 +5,10 @@ import RideSelect from "@/components/ride-select";
 import WaitTimeChart from "@/components/wait-time-chart";
 import { useFilteredRideHistory } from "@/hooks/use-filtered-ride-history";
 import { calculateWaitTimeTrends } from "@/lib/trend-calculator";
-import type { LiveWaitTimeEntry, WaitTimesResponse } from "@/lib/types";
+import type { LiveWaitTimeEntry, WaitTimesResponse, LiveRideDataEntry } from "@/lib/types";
 import TimeFilterSelector, { type TimeFilter } from "./time-filter-selector";
 import WaitTimeTrendChart from "./wait-time-trend-chart";
+import WaitTimeForecastChart from "./wait-time-forecast-chart";
 
 interface WaitTimesClientProps {
     data: WaitTimesResponse;
@@ -40,6 +41,16 @@ export default function WaitTimesClient({
         return liveWaitTime.find((ride) => ride.rideId === selectedRideId) || null;
     }, [liveWaitTime, selectedRideId]);
 
+    // Map LiveWaitTimeEntry to the shape expected by WaitTimeForecastChart
+    const selectedForecastData = useMemo(() => {
+        if (!selectedRide || !selectedRide.forecast) return undefined;
+        return {
+            id: selectedRide.rideId,
+            name: selectedRide.rideName,
+            forecast: selectedRide.forecast
+        } as unknown as LiveRideDataEntry;
+    }, [selectedRide]);
+
     return (
         <div className="w-full h-full md:container md:mx-auto">
             <RideSelect
@@ -55,9 +66,10 @@ export default function WaitTimesClient({
                 <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
                 <div className="mt-2" />
                 <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} selectedRide={selectedRide} />
-                {/* <div className="mt-2" /> */}
-                {/* <WaitTimeForecastChart liveRideData={selectedLiveRideData} /> */}
+                <div className="mt-2" />
+                <WaitTimeForecastChart liveRideData={selectedForecastData} />
             </div>
         </div>
     );
 }
+

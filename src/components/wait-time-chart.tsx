@@ -37,13 +37,10 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
     const transformedData = useMemo(() => {
         if (!rideWaitTimeHistory || !selectedRide) return [];
         return rideWaitTimeHistory.map((_ride) => {
-            // console.log('RIDE DATA: ', _ride);
-            const utcDate = new Date(_ride.snapshotTime);
-            const pstDate = new Date(utcDate.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
             return {
                 rideName: selectedRide.rideName,
                 waitTime: _ride.waitTime,
-                snapshotTime: pstDate.toISOString(),
+                snapshotTime: _ride.snapshotTime,
             };
         });
     }, [rideWaitTimeHistory, selectedRide]);
