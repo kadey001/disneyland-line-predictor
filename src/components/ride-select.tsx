@@ -58,7 +58,7 @@ export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, 
                         <div className="flex items-center gap-2 text-primary">
                             {attractionName}
                             <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(selectedLiveData?.status) ? "green" : "red" }} />
-                            {selectedLiveData?.waitTime ? `${selectedLiveData.waitTime} mins` : "N/A"}
+                            {selectedLiveData?.waitTime !== null && selectedLiveData?.waitTime !== undefined ? `${selectedLiveData.waitTime} mins` : "N/A"}
                         </div>
                     ) : "Select a ride"} />
                 </SelectTrigger>
@@ -70,7 +70,7 @@ export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, 
                                 <div className="flex items-center gap-2">
                                     {ride.rideName}
                                     <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                    {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
+                                    {ride.waitTime !== null && ride.waitTime !== undefined ? `${ride.waitTime} mins` : "N/A"}
                                 </div>
                             </SelectItem>
                         ))}
@@ -82,7 +82,7 @@ export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, 
                                 <div className="flex items-center gap-2">
                                     {ride.rideName}
                                     <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                    {ride.waitTime ? `${ride.waitTime} mins` : "N/A"}
+                                    {ride.waitTime !== null && ride.waitTime !== undefined ? `${ride.waitTime} mins` : "N/A"}
                                 </div>
                             </SelectItem>
                         ))}

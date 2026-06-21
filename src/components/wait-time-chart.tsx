@@ -28,7 +28,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
     }, [selectedRide]);
 
     const waitTimeBgColor = useMemo(() => {
-        if (!selectedRide?.waitTime) return "bg-gray-100 dark:bg-gray-700";
+        if (selectedRide?.waitTime === null || selectedRide?.waitTime === undefined) return "bg-gray-100 dark:bg-gray-700";
         if (selectedRide.waitTime <= 30) return "bg-green-100 dark:bg-green-700";
         if (selectedRide.waitTime <= 60) return "bg-yellow-100 dark:bg-yellow-700";
         return "bg-red-100 dark:bg-red-800";
@@ -55,7 +55,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                 </CardTitle>
                 <div className={`${waitTimeBgColor} px-4 py-2 rounded-lg shadow-sm`}>
                     <div className="text-2xl font-bold text-primary text-center">
-                        {selectedRide?.waitTime ? `${selectedRide.waitTime}` : 'N/A'}
+                        {selectedRide?.waitTime !== null && selectedRide?.waitTime !== undefined ? `${selectedRide.waitTime}` : 'N/A'}
                     </div>
                     <div className="text-xs text-primary text-center">min</div>
                 </div>
