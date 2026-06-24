@@ -1,10 +1,65 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { WaitTimesResponse } from '@/lib/types';
 import { useRefresh } from '@/hooks/use-refresh';
 
 interface UseWaitTimesDataProps {
     initialData?: WaitTimesResponse | null;
     selectedRideId?: string;
+}
+
+function mergeWaitTimesData(prevData: WaitTimesResponse | null, newData: WaitTimesResponse): WaitTimesResponse {
+    if (!prevData) return newData;
+
+    // Merge live wait times - only update if new data is newer or missing
+    const mergedLiveWaitTime = prevData.liveWaitTime?.map(existingRide => {
+        const newRide = newData.liveWaitTime?.find(r => r.rideId === existingRide.rideId);
+        if (newRide) {
+            const existingTime = new Date(existingRide.lastUpdated).getTime();
+            const newTime = new Date(newRide.lastUpdated).getTime();
+            const timeDiff = Date.now() - existingTime;
+
+            if (newTime > existingTime || timeDiff > 600000) {
+                return {
+                    ...newRide,
+                    lastUpdated: newRide.lastUpdated
+                };
+            }
+        }
+        return existingRide;
+    }) || newData.liveWaitTime?.map(ride => ({
+        ...ride,
+        lastUpdated: ride.lastUpdated
+    })) || [];
+
+    // Merge history data - append new points and deduplicate by snapshotTime
+    const mergedHistory = { ...prevData.groupedRidesHistory };
+    Object.keys(newData.groupedRidesHistory || {}).forEach(rideId => {
+        const existingRideHistory = mergedHistory[rideId] || [];
+        const newRideHistory = newData.groupedRidesHistory![rideId] || [];
+        
+        const historyMap = new Map();
+        
+        existingRideHistory.forEach(entry => {
+            historyMap.set(entry.snapshotTime, entry);
+        });
+        
+        newRideHistory.forEach(entry => {
+            historyMap.set(entry.snapshotTime, {
+                ...entry,
+                snapshotTime: entry.snapshotTime
+            });
+        });
+        
+        mergedHistory[rideId] = Array.from(historyMap.values())
+            .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
+    });
+
+    return {
+        ...prevData,
+        ...newData,
+        liveWaitTime: mergedLiveWaitTime,
+        groupedRidesHistory: mergedHistory
+    };
 }
 
 export function useWaitTimesData({ 
@@ -14,6 +69,7 @@ export function useWaitTimesData({
     const [data, setData] = useState<WaitTimesResponse | null>(initialData);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!initialData);
+    const fetchedRides = useRef<Set<string>>(new Set());
 
     const fetchData = useCallback(async (rideId?: string) => {
         try {
@@ -43,20 +99,20 @@ export function useWaitTimesData({
                     ...ride,
                     lastUpdated: ride.lastUpdated
                 })),
-                groupedRidesHistory: Object.keys(responseData.groupedRidesHistory || {}).reduce((acc, rideId) => {
-                    const sortedHistory = [...(responseData.groupedRidesHistory![rideId] || [])]
+                groupedRidesHistory: Object.keys(responseData.groupedRidesHistory || {}).reduce((acc, rId) => {
+                    const sortedHistory = [...(responseData.groupedRidesHistory![rId] || [])]
                         .map(entry => ({
                             ...entry,
                             snapshotTime: entry.snapshotTime
                         }))
                         .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
                     
-                    acc[rideId] = sortedHistory;
+                    acc[rId] = sortedHistory;
                     return acc;
                 }, {} as WaitTimesResponse['groupedRidesHistory'])
             };
 
-            setData(convertedData);
+            setData(prevData => mergeWaitTimesData(prevData, convertedData));
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch ride data');
@@ -83,67 +139,7 @@ export function useWaitTimesData({
             console.log(`Polling data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
             console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
 
-            // Smart merge to prevent duplicates and preserve existing data
-            setData(prevData => {
-                if (!prevData) return responseData;
-
-                // Merge live wait times - only update if polled data is newer or missing
-                const mergedLiveWaitTime = prevData.liveWaitTime?.map(existingRide => {
-                    const polledRide = responseData.liveWaitTime?.find(r => r.rideId === existingRide.rideId);
-                    if (polledRide) {
-                        // Compare timestamps - use polled data if it's newer or if existing data is old
-                        const existingTime = new Date(existingRide.lastUpdated).getTime();
-                        const polledTime = new Date(polledRide.lastUpdated).getTime();
-                        const timeDiff = Date.now() - existingTime;
-
-                        // Update if polled data is newer OR existing data is more than 10 minutes old
-                        if (polledTime > existingTime || timeDiff > 600000) {
-                            return {
-                                ...polledRide,
-                                lastUpdated: polledRide.lastUpdated
-                            };
-                        }
-                    }
-                    return existingRide;
-                }) || responseData.liveWaitTime?.map(ride => ({
-                    ...ride,
-                    lastUpdated: ride.lastUpdated
-                })) || [];
-
-                // Merge history data - append new points and deduplicate by snapshotTime
-                const mergedHistory = { ...prevData.groupedRidesHistory };
-                Object.keys(responseData.groupedRidesHistory || {}).forEach(rideId => {
-                    const existingRideHistory = mergedHistory[rideId] || [];
-                    const newRideHistory = responseData.groupedRidesHistory![rideId] || [];
-                    
-                    // Use a Map to deduplicate by snapshotTime
-                    const historyMap = new Map();
-                    
-                    // Add existing entries
-                    existingRideHistory.forEach(entry => {
-                        historyMap.set(entry.snapshotTime, entry);
-                    });
-                    
-                    // Add new entries (they will overwrite if the timestamp is exactly the same)
-                    newRideHistory.forEach(entry => {
-                        historyMap.set(entry.snapshotTime, {
-                            ...entry,
-                            snapshotTime: entry.snapshotTime
-                        });
-                    });
-                    
-                    // Convert back to array and sort chronologically
-                    mergedHistory[rideId] = Array.from(historyMap.values())
-                        .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
-                });
-
-                return {
-                    ...prevData,
-                    liveWaitTime: mergedLiveWaitTime,
-                    groupedRidesHistory: mergedHistory
-                };
-            });
-
+            setData(prevData => mergeWaitTimesData(prevData, responseData));
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch ride data');
@@ -152,12 +148,11 @@ export function useWaitTimesData({
 
     const hasData = !!data;
     useEffect(() => {
-        // If we have a selected ride but no history for it (or only partial history from the overview),
-        // fetch the full history for that specific ride.
+        // If we have a selected ride, make sure we have fetched its full 24h history.
         if (selectedRideId && data) {
-            const hasHistory = data.groupedRidesHistory[selectedRideId] && data.groupedRidesHistory[selectedRideId].length > 10;
-            if (!hasHistory) {
+            if (!fetchedRides.current.has(selectedRideId)) {
                 console.log(`Fetching targeted history for selected ride: ${selectedRideId}`);
+                fetchedRides.current.add(selectedRideId);
                 fetchData(selectedRideId);
             }
         } else if (!hasData) {
