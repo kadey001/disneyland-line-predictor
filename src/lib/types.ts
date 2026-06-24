@@ -103,6 +103,11 @@ export interface LiveWaitTimeEntry {
     waitTime: number | null;
     status: string;
     lastUpdated: string; // ISO date string
+    forecast?: {
+        percentage: number;
+        waitTime: number;
+        time: string; // ISO date string
+    }[];
 }
 
 export interface RideHistoryEntry {
