@@ -1,6 +1,32 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { WaitTimesResponse } from '@/lib/types';
+import { WaitTimesResponse, LiveWaitTimeEntry } from '@/lib/types';
 import { useRefresh } from '@/hooks/use-refresh';
+
+// Server-injected metadata fields that should not be merged into client state
+type ResponseMeta = { _cachedAt?: string; _fromCache?: boolean; _cacheSource?: string };
+type RawWaitTimesResponse = WaitTimesResponse & ResponseMeta;
+
+/**
+ * Strips server-injected cache metadata and returns a clean, history-sorted
+ * WaitTimesResponse. Used by both the explicit fetch and the poll paths so the
+ * two stay in sync and `_fromCache`/`_cachedAt` never leak into app state.
+ */
+function normalizeResponse(raw: RawWaitTimesResponse): WaitTimesResponse {
+    const { _cachedAt, _fromCache, _cacheSource, ...data } = raw;
+    void _cachedAt; void _fromCache; void _cacheSource;
+
+    const sortedHistory = Object.keys(data.groupedRidesHistory || {}).reduce((acc, rId) => {
+        acc[rId] = [...(data.groupedRidesHistory![rId] || [])]
+            .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
+        return acc;
+    }, {} as WaitTimesResponse['groupedRidesHistory']);
+
+    return {
+        ...data,
+        liveWaitTime: data.liveWaitTime ?? [],
+        groupedRidesHistory: sortedHistory,
+    };
+}
 
 interface UseWaitTimesDataProps {
     initialData?: WaitTimesResponse | null;
@@ -10,26 +36,27 @@ interface UseWaitTimesDataProps {
 function mergeWaitTimesData(prevData: WaitTimesResponse | null, newData: WaitTimesResponse): WaitTimesResponse {
     if (!prevData) return newData;
 
-    // Merge live wait times - only update if new data is newer or missing
-    const mergedLiveWaitTime = prevData.liveWaitTime?.map(existingRide => {
-        const newRide = newData.liveWaitTime?.find(r => r.rideId === existingRide.rideId);
-        if (newRide) {
-            const existingTime = new Date(existingRide.lastUpdated).getTime();
-            const newTime = new Date(newRide.lastUpdated).getTime();
-            const timeDiff = Date.now() - existingTime;
-
-            if (newTime > existingTime || timeDiff > 600000) {
-                return {
-                    ...newRide,
-                    lastUpdated: newRide.lastUpdated
-                };
-            }
+    // Merge live wait times by rideId over the UNION of both lists. Mapping only
+    // over prevData would silently drop rides that first appear in newData (e.g.
+    // a ride that opens mid-session). Update an existing ride when the new entry
+    // is newer, or when the existing one has gone stale (>10 min old).
+    const STALE_MS = 10 * 60 * 1000;
+    const liveById = new Map<string, LiveWaitTimeEntry>();
+    (prevData.liveWaitTime ?? []).forEach(ride => liveById.set(ride.rideId, ride));
+    (newData.liveWaitTime ?? []).forEach(newRide => {
+        const existing = liveById.get(newRide.rideId);
+        if (!existing) {
+            liveById.set(newRide.rideId, newRide);
+            return;
         }
-        return existingRide;
-    }) || newData.liveWaitTime?.map(ride => ({
-        ...ride,
-        lastUpdated: ride.lastUpdated
-    })) || [];
+        const existingTime = new Date(existing.lastUpdated).getTime();
+        const newTime = new Date(newRide.lastUpdated).getTime();
+        const existingIsStale = Date.now() - existingTime > STALE_MS;
+        if (newTime > existingTime || existingIsStale) {
+            liveById.set(newRide.rideId, newRide);
+        }
+    });
+    const mergedLiveWaitTime = Array.from(liveById.values());
 
     // Merge history data - append new points and deduplicate by snapshotTime
     const mergedHistory = { ...prevData.groupedRidesHistory };
@@ -70,12 +97,15 @@ export function useWaitTimesData({
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!initialData);
     const fetchedRides = useRef<Set<string>>(new Set());
+    // Tracks whether we've ever held data, without forcing fetchData to depend on
+    // the `data` state (which would recreate the callback on every poll).
+    const hasEverHadData = useRef<boolean>(!!initialData);
 
     const fetchData = useCallback(async (rideId?: string) => {
         try {
-            // Only set loading if we don't have any data yet
-            setIsLoading(prev => !prev && !data);
-            
+            // Only show the full-screen loading state before we have any data.
+            if (!hasEverHadData.current) setIsLoading(true);
+
             const url = rideId ? `/api/ride-wait-times?ride_id=${rideId}` : '/api/ride-wait-times';
             const response = await fetch(url, {
                 method: 'GET',
@@ -87,39 +117,18 @@ export function useWaitTimesData({
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const responseData = await response.json() as WaitTimesResponse & { _cachedAt?: string; _fromCache?: boolean };
-
-            console.log(`Data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
-            console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
-
-            // Convert UTC timestamps to local timezone and ensure chronological sorting
-            const convertedData: WaitTimesResponse = {
-                ...responseData,
-                liveWaitTime: responseData.liveWaitTime?.map(ride => ({
-                    ...ride,
-                    lastUpdated: ride.lastUpdated
-                })),
-                groupedRidesHistory: Object.keys(responseData.groupedRidesHistory || {}).reduce((acc, rId) => {
-                    const sortedHistory = [...(responseData.groupedRidesHistory![rId] || [])]
-                        .map(entry => ({
-                            ...entry,
-                            snapshotTime: entry.snapshotTime
-                        }))
-                        .sort((a, b) => new Date(a.snapshotTime).getTime() - new Date(b.snapshotTime).getTime());
-                    
-                    acc[rId] = sortedHistory;
-                    return acc;
-                }, {} as WaitTimesResponse['groupedRidesHistory'])
-            };
+            const responseData = await response.json() as RawWaitTimesResponse;
+            const convertedData = normalizeResponse(responseData);
 
             setData(prevData => mergeWaitTimesData(prevData, convertedData));
+            hasEverHadData.current = true;
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch ride data');
         } finally {
             setIsLoading(false);
         }
-    }, [data]);
+    }, []);
 
     // Polling function that doesn't set loading state and prevents duplicates
     const pollData = useCallback(async (rideId?: string) => {
@@ -134,12 +143,11 @@ export function useWaitTimesData({
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const responseData = await response.json() as WaitTimesResponse & { _cachedAt?: string; _fromCache?: boolean };
+            const responseData = await response.json() as RawWaitTimesResponse;
+            const convertedData = normalizeResponse(responseData);
 
-            console.log(`Polling data fetched - From cache: ${responseData._fromCache}, Cached at: ${responseData._cachedAt}`);
-            console.log(`Live entries: ${responseData.liveWaitTime?.length || 0}, History entries: ${Object.keys(responseData.groupedRidesHistory || {}).length}`);
-
-            setData(prevData => mergeWaitTimesData(prevData, responseData));
+            setData(prevData => mergeWaitTimesData(prevData, convertedData));
+            hasEverHadData.current = true;
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to fetch ride data');
@@ -149,9 +157,8 @@ export function useWaitTimesData({
     const hasData = !!data;
     useEffect(() => {
         // If we have a selected ride, make sure we have fetched its full 24h history.
-        if (selectedRideId && data) {
+        if (selectedRideId && hasData) {
             if (!fetchedRides.current.has(selectedRideId)) {
-                console.log(`Fetching targeted history for selected ride: ${selectedRideId}`);
                 fetchedRides.current.add(selectedRideId);
                 fetchData(selectedRideId);
             }
@@ -159,7 +166,7 @@ export function useWaitTimesData({
             // Initial fetch if no data exists
             fetchData();
         }
-    }, [fetchData, selectedRideId, hasData, data]);
+    }, [fetchData, selectedRideId, hasData]);
 
     // Poll for updates at a regular interval
     // Since we no longer have Supabase realtime, polling is always enabled

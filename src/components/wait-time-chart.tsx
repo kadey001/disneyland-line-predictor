@@ -27,12 +27,18 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
         return selectedRide?.status === "OPERATING" ? "green" : "red";
     }, [selectedRide]);
 
+    const isOperating = selectedRide?.status === "OPERATING";
+    const hasWaitTime = selectedRide?.waitTime !== null && selectedRide?.waitTime !== undefined;
+    // Status is authoritative: only show a wait time for an operating ride, so a
+    // stale 0 on a closed ride reads "N/A" instead of "0".
+    const showWaitTime = isOperating && hasWaitTime;
+
     const waitTimeBgColor = useMemo(() => {
-        if (selectedRide?.waitTime === null || selectedRide?.waitTime === undefined) return "bg-gray-100 dark:bg-gray-700";
-        if (selectedRide.waitTime <= 30) return "bg-green-100 dark:bg-green-700";
-        if (selectedRide.waitTime <= 60) return "bg-yellow-100 dark:bg-yellow-700";
+        if (!isOperating || !hasWaitTime) return "bg-gray-100 dark:bg-gray-700";
+        if (selectedRide!.waitTime! <= 30) return "bg-green-100 dark:bg-green-700";
+        if (selectedRide!.waitTime! <= 60) return "bg-yellow-100 dark:bg-yellow-700";
         return "bg-red-100 dark:bg-red-800";
-    }, [selectedRide?.waitTime]);
+    }, [isOperating, hasWaitTime, selectedRide]);
 
     const transformedData = useMemo(() => {
         if (!rideWaitTimeHistory || !selectedRide) return [];
@@ -40,6 +46,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
             return {
                 rideName: selectedRide.rideName,
                 waitTime: _ride.waitTime,
+                status: _ride.status,
                 snapshotTime: _ride.snapshotTime,
             };
         });
@@ -51,11 +58,17 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                 <CardTitle>
                     Ride: {selectedRide?.rideName}
                     <br />
-                    Status: {selectedRide?.status === "OPERATING" ? "Open" : "Closed"}<span className={`inline-block w-2 h-2 rounded-full ml-2`} style={{ backgroundColor: statusDotColor }} />
+                    Status: {isOperating ? "Open" : "Closed"}
+                    <span
+                        className="inline-block w-2 h-2 rounded-full ml-2"
+                        style={{ backgroundColor: statusDotColor }}
+                        role="img"
+                        aria-label={isOperating ? "Operating" : "Closed"}
+                    />
                 </CardTitle>
                 <div className={`${waitTimeBgColor} px-4 py-2 rounded-lg shadow-sm`}>
                     <div className="text-2xl font-bold text-primary text-center">
-                        {selectedRide?.waitTime !== null && selectedRide?.waitTime !== undefined ? `${selectedRide.waitTime}` : 'N/A'}
+                        {showWaitTime ? `${selectedRide!.waitTime}` : 'N/A'}
                     </div>
                     <div className="text-xs text-primary text-center">min</div>
                 </div>
@@ -88,7 +101,7 @@ export default function WaitTimeChart({ rideWaitTimeHistory, selectedRide }: Wai
                                         formatter={() => (
                                             <div>
                                                 <div className="text-sm border-b pb-1 mb-1">
-                                                    {data.waitTime} min
+                                                    {data.waitTime !== null && data.waitTime !== undefined ? `${data.waitTime} min` : 'Closed'}
                                                 </div>
                                                 <div>
                                                     <span><strong>Reported At:</strong> {time}</span>

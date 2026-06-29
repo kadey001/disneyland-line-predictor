@@ -4,30 +4,25 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Header() {
     return (
-        <header>
-            <div className="flex items-center bg-header text-white px-4 py-2 shadow-md">
+        <header className="sticky top-0 z-50 w-full border-b border-white/10 dark:border-white/5 glass">
+            <div className="flex items-center px-4 py-3 shadow-sm">
                 <div className="flex-none">
-                    <Link href="/">
+                    <Link href="/" className="transition-transform hover:scale-105 duration-300 block">
                         <Image
                             src="https://kcr90ci7l2.ufs.sh/f/qmwD8TJNhAVR6yCC5S0FLK3hqPkxOiUGzMnp9tgslfyH8C4Z"
                             alt="Disney Logo"
-                            width={50}
-                            height={50}
+                            width={42}
+                            height={42}
+                            className="drop-shadow-md"
                         />
                     </Link>
                 </div>
                 <div className="grow">
-                    <h1 className="text-2xl font-bold text-center text-primary">Disneyland Wait Times</h1>
+                    <h1 className="text-xl md:text-2xl font-bold text-center tracking-tight">
+                        <span className="text-gradient">Disneyland</span> Wait Times
+                    </h1>
                 </div>
-                <div className="flex-none flex items-center gap-2">
-                    <Link
-                        href="/realtime-test"
-                        className="h-9 w-9 flex items-center justify-center text-primary hover:bg-white/20 rounded-md opacity-0 hover:opacity-100 transition-opacity"
-                        aria-label="Go to realtime test page"
-                        title="Realtime Test Page"
-                    >
-                        🧪
-                    </Link>
+                <div className="flex-none flex items-center gap-3">
                     <ThemeToggle />
                 </div>
             </div>
