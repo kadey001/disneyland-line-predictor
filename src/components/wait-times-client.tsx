@@ -52,22 +52,33 @@ export default function WaitTimesClient({
     }, [selectedRide]);
 
     return (
-        <div className="w-full h-full md:container md:mx-auto">
-            <RideSelect
-                selectedRideId={selectedRideId}
-                onSelect={setSelectedRideId}
-                attractionAtlas={attractionAtlas}
-                liveWaitTime={liveWaitTime}
-            />
-            <TimeFilterSelector value={timeFilter} onValueChange={setTimeFilter} />
+        <div className="w-full h-full md:container md:mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 p-4 md:p-0">
+            <div className="mb-6">
+                <RideSelect
+                    selectedRideId={selectedRideId}
+                    onSelect={setSelectedRideId}
+                    attractionAtlas={attractionAtlas}
+                    liveWaitTime={liveWaitTime}
+                />
+            </div>
+            
+            <div className="mb-6 flex justify-end">
+                <TimeFilterSelector value={timeFilter} onValueChange={setTimeFilter} />
+            </div>
 
             {/* Data Charts */}
-            <div className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg mt-2 md:p-6 shadow-lg text-white">
-                <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
-                <div className="mt-2" />
-                <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} selectedRide={selectedRide} />
-                <div className="mt-2" />
-                <WaitTimeForecastChart liveRideData={selectedForecastData} />
+            <div className="w-full glass-card rounded-2xl mt-4 p-4 md:p-8 space-y-6">
+                <div className="glass p-4 rounded-xl shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-both">
+                    <WaitTimeChart rideWaitTimeHistory={filteredRidesHistory} selectedRide={selectedRide} />
+                </div>
+                
+                <div className="glass p-4 rounded-xl shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
+                    <WaitTimeTrendChart rideWaitTimeTrend={trends ? trends : undefined} selectedRide={selectedRide} />
+                </div>
+                
+                <div className="glass p-4 rounded-xl shadow-inner animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-both">
+                    <WaitTimeForecastChart liveRideData={selectedForecastData} />
+                </div>
             </div>
         </div>
     );

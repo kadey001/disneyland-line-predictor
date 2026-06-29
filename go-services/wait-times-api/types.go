@@ -39,9 +39,12 @@ type LiveWaitTimeEntry struct {
 	LastUpdated time.Time `json:"lastUpdated"`
 }
 
-// RideHistoryEntry represents a historical wait time entry for a ride
+// RideHistoryEntry represents a historical wait time entry for a ride.
+// WaitTime is a pointer so a closed/no-standby snapshot serializes to JSON null,
+// letting clients distinguish a closure from a genuine 0-minute walk-on.
 type RideHistoryEntry struct {
-	WaitTime     int64     `json:"waitTime"`
+	WaitTime     *int      `json:"waitTime"`
+	Status       string    `json:"status"`
 	SnapshotTime time.Time `json:"snapshotTime"`
 }
 

@@ -16,9 +16,9 @@ export default function WaitTimesLayout({
         <div className="h-full">
             {/* Background image with mobile-optimized positioning */}
             <div
-                className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+                className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-60"
                 style={{
-                    backgroundImage: "url('https://kcr90ci7l2.ufs.sh/f/qmwD8TJNhAVRXikesuKbQoO8J7t16hSykZ29wmKMY0lIiBaz')",
+                    backgroundImage: "url('/elegant_disney_bg.png')",
                     backgroundSize: "cover",
                     backgroundPosition: "center center",
                     backgroundRepeat: "no-repeat",

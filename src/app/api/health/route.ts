@@ -14,14 +14,17 @@ export async function GET() {
             timestamp: new Date().toISOString(),
             environment: config.NODE_ENV,
             version: process.env.npm_package_version || 'unknown',
+            // Only gate health on services this app actually depends on. The Next
+            // app talks to the wait-times API, not the database directly, so a
+            // missing DATABASE_URL must not flip the whole app to "unhealthy".
             checks: {
                 environment: true,
-                database: !!config.DATABASE_URL,
                 waitTimesApi: !!config.WAIT_TIMES_API_URL,
                 themeParksWikiApi: !!THEME_PARKS_WIKI_API_BASE_URL
             },
             config: {
                 waitTimesApiUrl: config.WAIT_TIMES_API_URL,
+                hasDatabaseUrl: !!config.DATABASE_URL, // informational only
                 hasNextAuthSecret: !!config.NEXTAUTH_SECRET,
                 hasNextAuthUrl: !!config.NEXTAUTH_URL,
                 hasThemeParksWikiApi: !!THEME_PARKS_WIKI_API_BASE_URL

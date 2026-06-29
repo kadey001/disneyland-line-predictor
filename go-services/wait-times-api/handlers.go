@@ -110,15 +110,12 @@ func waitTimesHandler(repo *repository.RideDataHistoryRepository) http.HandlerFu
 		for _, record := range rideDataHistory {
 			// Only process records for rides that are in our filtered list
 			if shared.IsRideFiltered(record.ParkID, record.RideID) {
-				// Convert to flat history format
-				waitTime := int64(0)
-
-				if record.StandbyWaitTime != nil {
-					waitTime = int64(*record.StandbyWaitTime)
-				}
-
+				// Pass the standby wait time through as-is. A nil value (closed /
+				// no standby) marshals to JSON null so the client can distinguish a
+				// closed period from a genuine 0-minute walk-on.
 				historyEntry := RideHistoryEntry{
-					WaitTime:     waitTime,
+					WaitTime:     record.StandbyWaitTime,
+					Status:       record.Status,
 					SnapshotTime: record.LastUpdated,
 				}
 				groupedRidesHistory[record.RideID] = append(groupedRidesHistory[record.RideID], historyEntry)

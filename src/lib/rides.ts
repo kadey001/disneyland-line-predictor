@@ -15,7 +15,6 @@ export const IMPORTANT_DISNEYLAND_RIDES = [
 ];
 
 export const IMPORTANT_CALIFORNIA_ADVENTURE_RIDES = [
-
     {
         name: "Incredicoaster",
         id: "5d07a2b1-49ca-4de7-9d32-6d08edf69b08"
@@ -29,5 +28,3 @@ export const IMPORTANT_CALIFORNIA_ADVENTURE_RIDES = [
         id: "b7678dab-5544-48d5-8fdc-c1a0127cfbcd"
     }
 ];
-
-export const ALL_IMPORTANT_RIDES = [...IMPORTANT_DISNEYLAND_RIDES, ...IMPORTANT_CALIFORNIA_ADVENTURE_RIDES];

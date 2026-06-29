@@ -1,9 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { AttractionAtlasEntry, LiveWaitTimeEntry, ParkAtlasEntry } from "@/lib/types";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { SelectLabel } from "@radix-ui/react-select";
-import { useMemo } from "react";
 
 interface RideSelectProps {
     selectedRideId: string;
@@ -13,6 +13,8 @@ interface RideSelectProps {
 }
 
 export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, liveWaitTime }: RideSelectProps) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const californiaAdventureRides = attractionAtlas?.find(park => park.parkName === "Disney California Adventure Park")?.rides || [];
     const disneylandRides = attractionAtlas?.find(park => park.parkName === "Disneyland Park")?.rides || [];
 
@@ -23,7 +25,8 @@ export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, 
             return {
                 ...atlasEntry,
                 status: liveData?.status || 'UNKNOWN',
-                waitTime: liveData?.waitTime || null
+                // Use ?? so a 0-minute (walk-on) wait isn't coerced to null and shown as "N/A"
+                waitTime: liveData?.waitTime ?? null
             };
         });
     };
@@ -33,57 +36,54 @@ export default function RideSelect({ selectedRideId, onSelect, attractionAtlas, 
 
     const isRideOperating = (status?: string) => status === "OPERATING";
 
-    const attractionName = useMemo(() => {
-        // find the ride name in the atlas if there is a selectedRideId
-        if (selectedRideId) {
-            for (const park of attractionAtlas) {
-                const attraction = park.rides.find(ride => ride.rideId === selectedRideId);
-                if (attraction) {
-                    return attraction.rideName;
-                }
-            }
-        }
-        return null;
-    }, [selectedRideId, attractionAtlas]);
-
-    const selectedLiveData = useMemo(() => {
-        return liveWaitTime.find(ride => ride.rideId === selectedRideId);
-    }, [selectedRideId, liveWaitTime]);
+    if (!mounted) {
+        return (
+            <div className="glass rounded-xl shadow-md border border-white/10 dark:border-white/5 h-10 w-full" />
+        );
+    }
 
     return (
-        <div className="bg-background border border-gray-200 rounded-lg shadow-lg mt-2">
-            <Select onValueChange={(value) => onSelect(value)}>
-                <SelectTrigger aria-label="Select a Disney ride" className="w-[100%]">
-                    <SelectValue placeholder={attractionName ? (
-                        <div className="flex items-center gap-2 text-primary">
-                            {attractionName}
-                            <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(selectedLiveData?.status) ? "green" : "red" }} />
-                            {selectedLiveData?.waitTime !== null && selectedLiveData?.waitTime !== undefined ? `${selectedLiveData.waitTime} mins` : "N/A"}
-                        </div>
-                    ) : "Select a ride"} />
+        <div className="glass rounded-xl shadow-md border border-white/10 dark:border-white/5">
+            <Select value={selectedRideId} onValueChange={(value) => onSelect(value)}>
+                <SelectTrigger aria-label="Select a Disney ride" className="w-[100%] bg-transparent border-none">
+                    <SelectValue placeholder="Select a ride" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="glass">
                     <SelectGroup>
                         <SelectLabel>Disneyland Park</SelectLabel>
                         {disneylandRidesWithStatus.map((ride) => (
-                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary">
-                                <div className="flex items-center gap-2">
+                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary focus:bg-white/10 cursor-pointer">
+                                <span className="flex items-center gap-2">
                                     {ride.rideName}
-                                    <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                    {ride.waitTime !== null && ride.waitTime !== undefined ? `${ride.waitTime} mins` : "N/A"}
-                                </div>
+                                    <span
+                                        className="inline-block w-2 h-2 rounded-full"
+                                        style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }}
+                                        role="img"
+                                        aria-label={isRideOperating(ride.status) ? "Operating" : "Closed"}
+                                    />
+                                    {isRideOperating(ride.status) && ride.waitTime !== null && ride.waitTime !== undefined
+                                        ? `${ride.waitTime} mins`
+                                        : "N/A"}
+                                </span>
                             </SelectItem>
                         ))}
                     </SelectGroup>
                     <SelectGroup>
                         <SelectLabel>Disney California Adventure Park</SelectLabel>
                         {californiaAdventureRidesWithStatus.map((ride) => (
-                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary">
-                                <div className="flex items-center gap-2">
+                            <SelectItem key={ride.rideId} value={ride.rideId} className="flex items-center justify-between gap-2 text-primary focus:bg-white/10 cursor-pointer">
+                                <span className="flex items-center gap-2">
                                     {ride.rideName}
-                                    <span className={`inline-block w-2 h-2 rounded-full`} style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }} />
-                                    {ride.waitTime !== null && ride.waitTime !== undefined ? `${ride.waitTime} mins` : "N/A"}
-                                </div>
+                                    <span
+                                        className="inline-block w-2 h-2 rounded-full"
+                                        style={{ backgroundColor: isRideOperating(ride.status) ? "green" : "red" }}
+                                        role="img"
+                                        aria-label={isRideOperating(ride.status) ? "Operating" : "Closed"}
+                                    />
+                                    {isRideOperating(ride.status) && ride.waitTime !== null && ride.waitTime !== undefined
+                                        ? `${ride.waitTime} mins`
+                                        : "N/A"}
+                                </span>
                             </SelectItem>
                         ))}
                     </SelectGroup>

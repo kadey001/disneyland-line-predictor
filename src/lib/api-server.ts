@@ -17,7 +17,9 @@ export async function getWaitTimesData(rideId?: string, windowHours?: number): P
         url.searchParams.set('window_hours', '4');
     }
 
-    console.log(`Server-side fetching wait times from: ${url.toString()} (Method: GET)`);
+    if (process.env.DEBUG_WAIT_TIMES === 'true') {
+        console.log(`Server-side fetching wait times from: ${url.toString()} (Method: GET)`);
+    }
 
     try {
         // Try GET first

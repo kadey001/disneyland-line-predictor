@@ -111,7 +111,9 @@ export interface LiveWaitTimeEntry {
 }
 
 export interface RideHistoryEntry {
-    waitTime: number;
+    // null = closed / no standby reported at this snapshot (distinct from a 0-min walk-on)
+    waitTime: number | null;
+    status?: string;
     snapshotTime: string; // ISO date string
 }
 
