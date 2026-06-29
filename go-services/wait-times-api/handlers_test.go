@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -164,4 +165,37 @@ func TestWaitTimesHandler_MethodNotAllowed(t *testing.T) {
 	// Note: This test would require a proper mock repository
 	// For now, we'll skip the full handler test since it requires database setup
 	t.Skip("Skipping handler test that requires database repository")
+}
+
+// TestRideHistoryEntryJSON locks in the null-vs-0 distinction: a closed/no-standby
+// snapshot must serialize waitTime as JSON null, while a walk-on stays 0.
+func TestRideHistoryEntryJSON(t *testing.T) {
+	walkOn := 0
+	cases := []struct {
+		name     string
+		waitTime *int
+		want     string
+	}{
+		{"closed ride serializes waitTime as null", nil, `"waitTime":null`},
+		{"walk-on ride serializes waitTime as 0", &walkOn, `"waitTime":0`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			entry := RideHistoryEntry{
+				WaitTime:     tc.waitTime,
+				Status:       "OPERATING",
+				SnapshotTime: time.Now(),
+			}
+
+			b, err := json.Marshal(entry)
+			if err != nil {
+				t.Fatalf("Failed to marshal RideHistoryEntry: %v", err)
+			}
+
+			if !strings.Contains(string(b), tc.want) {
+				t.Errorf("Expected JSON to contain %q, got %s", tc.want, string(b))
+			}
+		})
+	}
 }
