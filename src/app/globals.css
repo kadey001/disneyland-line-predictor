@@ -3,24 +3,22 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * "Line Magic" design system.
+ * Two palettes from the Claude Design handoff: NIGHT (default, .dark) and DAY (:root).
+ * next-themes maps theme "dark" -> .dark (night) and "light" -> :root (day).
+ * Design-specific tokens (--sky-*, --ink-*, --gold-*, --open/--mod/--busy/--down,
+ * --card-2/3, --line-2, --glow, --star, --firefly, --cloud, --grid) are used directly
+ * by the screen components. The shadcn semantic tokens below are remapped onto the same
+ * palette so the remaining ui/* primitives stay coherent.
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --font-sans: var(--font-mulish);
+  --font-serif: var(--font-cormorant);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -37,6 +35,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-chart-1: var(--gold);
+  --color-chart-2: var(--open);
+  --color-chart-3: var(--mod);
+  --color-chart-4: var(--busy);
+  --color-chart-5: var(--down);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -44,188 +47,187 @@
   --color-header: var(--header);
 }
 
+/* DAY palette (default :root, no .dark class) */
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.99 0.005 270);
-  --foreground: oklch(0.15 0.02 270);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.02 270);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.02 270);
-  --primary: oklch(0.45 0.25 270);
-  --primary-foreground: oklch(0.99 0.01 270);
-  --secondary: oklch(0.95 0.01 270);
-  --secondary-foreground: oklch(0.25 0.05 270);
-  --muted: oklch(0.96 0.01 270);
-  --muted-foreground: oklch(0.55 0.02 270);
-  --accent: oklch(0.95 0.03 290);
-  --accent-foreground: oklch(0.25 0.05 290);
-  --destructive: oklch(0.6 0.2 25);
-  --border: oklch(0.92 0.01 270);
-  --input: oklch(0.92 0.01 270);
-  --ring: oklch(0.45 0.25 270);
-  --chart-1: oklch(0.65 0.2 40);
-  --chart-2: oklch(0.6 0.15 180);
-  --chart-3: oklch(0.4 0.1 230);
-  --chart-4: oklch(0.8 0.2 85);
-  --chart-5: oklch(0.75 0.2 70);
-  --sidebar: oklch(0.99 0.005 270);
-  --sidebar-foreground: oklch(0.15 0.02 270);
-  --sidebar-primary: oklch(0.45 0.25 270);
-  --sidebar-primary-foreground: oklch(0.99 0.01 270);
-  --sidebar-accent: oklch(0.95 0.01 270);
-  --sidebar-accent-foreground: oklch(0.25 0.05 270);
-  --sidebar-border: oklch(0.92 0.01 270);
-  --sidebar-ring: oklch(0.45 0.25 270);
-  --header: oklch(0.98 0.01 270 / 0.8);
+
+  --sky-1: #a9daff;
+  --sky-2: #8bc6f2;
+  --sky-3: #d9edfb;
+  --sky-4: #fff0cd;
+  --ink: #222c47;
+  --ink-2: #43527a;
+  --ink-3: #7886a4;
+  --card: rgba(255, 255, 255, 0.66);
+  --card-2: rgba(255, 255, 255, 0.82);
+  --card-3: rgba(255, 255, 255, 0.72);
+  --line: rgba(40, 60, 110, 0.15);
+  --line-2: rgba(40, 60, 110, 0.10);
+  --gold: #e0a52e;
+  --gold-2: #f4c75f;
+  --gold-deep: #a9741a;
+  --glow: rgba(224, 165, 46, 0.28);
+  --open: #27a877;
+  --mod: #dd9b1e;
+  --busy: #ef6d44;
+  --down: #9aa6bc;
+  --shadow: 0 24px 60px -34px rgba(60, 90, 160, 0.5);
+  --star: rgba(255, 255, 255, 0);
+  --firefly: rgba(255, 210, 120, 0);
+  --cloud: rgba(255, 255, 255, 0.8);
+  --grid: rgba(40, 60, 110, 0.08);
+
+  /* shadcn semantic tokens mapped onto the DAY palette */
+  --background: #eaf4ff;
+  --foreground: var(--ink);
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--gold);
+  --primary-foreground: #2a1d05;
+  --secondary: var(--card-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--card-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--card-3);
+  --accent-foreground: var(--ink);
+  --destructive: var(--busy);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+  --header: rgba(255, 255, 255, 0.55);
 }
 
+/* NIGHT palette (default theme, applied via .dark class) */
 .dark {
-  --background: oklch(0.08 0.02 275);
-  --foreground: oklch(0.98 0.01 275);
-  --card: oklch(0.11 0.03 275);
-  --card-foreground: oklch(0.98 0.01 275);
-  --popover: oklch(0.11 0.03 275);
-  --popover-foreground: oklch(0.98 0.01 275);
-  --primary: oklch(0.65 0.25 275);
-  --primary-foreground: oklch(0.1 0.02 275);
-  --secondary: oklch(0.18 0.04 275);
-  --secondary-foreground: oklch(0.98 0.01 275);
-  --muted: oklch(0.15 0.03 275);
-  --muted-foreground: oklch(0.7 0.02 275);
-  --accent: oklch(0.2 0.06 290);
-  --accent-foreground: oklch(0.98 0.01 275);
-  --destructive: oklch(0.6 0.2 25);
-  --border: oklch(0.18 0.04 275);
-  --input: oklch(0.18 0.04 275);
-  --ring: oklch(0.65 0.25 275);
-  --chart-1: oklch(0.6 0.2 275);
-  --chart-2: oklch(0.7 0.15 160);
-  --chart-3: oklch(0.75 0.2 70);
-  --chart-4: oklch(0.65 0.25 300);
-  --chart-5: oklch(0.65 0.25 15);
-  --sidebar: oklch(0.08 0.02 275);
-  --sidebar-foreground: oklch(0.98 0.01 275);
-  --sidebar-primary: oklch(0.65 0.25 275);
-  --sidebar-primary-foreground: oklch(0.1 0.02 275);
-  --sidebar-accent: oklch(0.18 0.04 275);
-  --sidebar-accent-foreground: oklch(0.98 0.01 275);
-  --sidebar-border: oklch(0.18 0.04 275);
-  --sidebar-ring: oklch(0.65 0.25 275);
-  --header: oklch(0.11 0.03 275 / 0.8);
+  --sky-1: #13112e;
+  --sky-2: #241a52;
+  --sky-3: #3f2168;
+  --sky-4: #7d3360;
+  --ink: #f7f0e1;
+  --ink-2: #cabde8;
+  --ink-3: #9286b6;
+  --card: rgba(30, 24, 68, 0.5);
+  --card-2: rgba(18, 14, 46, 0.66);
+  --card-3: rgba(44, 34, 92, 0.55);
+  --line: rgba(243, 220, 160, 0.18);
+  --line-2: rgba(255, 255, 255, 0.07);
+  --gold: #ecc764;
+  --gold-2: #f7e4ab;
+  --gold-deep: #c4922f;
+  --glow: rgba(236, 199, 100, 0.35);
+  --open: #63d6a6;
+  --mod: #f1c75e;
+  --busy: #ff8a66;
+  --down: #8094b3;
+  --shadow: 0 26px 70px -30px rgba(0, 0, 0, 0.8);
+  --star: rgba(255, 255, 255, 0.95);
+  --firefly: rgba(247, 228, 171, 0.95);
+  --cloud: rgba(255, 255, 255, 0);
+  --grid: rgba(255, 255, 255, 0.06);
+
+  --background: #13112e;
+  --foreground: var(--ink);
+  --card-foreground: var(--ink);
+  --popover: #1c1742;
+  --popover-foreground: var(--ink);
+  --primary: var(--gold);
+  --primary-foreground: #1a1330;
+  --secondary: var(--card-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--card-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--card-3);
+  --accent-foreground: var(--ink);
+  --destructive: var(--busy);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--gold);
+  --header: rgba(12, 10, 32, 0.45);
 }
 
 @layer base {
   * {
+    box-sizing: border-box;
     @apply border-border outline-ring/50;
   }
 
+  html,
   body {
-    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
   }
 
-  /* Prevent Radix UI Select from adding margin to body */
   body {
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: var(--font-mulish), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(135% 95% at 50% 120%, var(--sky-4) 0%, rgba(125, 51, 96, 0) 52%),
+      radial-gradient(120% 80% at 82% -12%, var(--glow) 0%, transparent 46%),
+      linear-gradient(178deg, var(--sky-1) 0%, var(--sky-2) 48%, var(--sky-3) 100%);
+    background-attachment: fixed;
+    transition: background 0.8s ease, color 0.6s ease;
+    /* Prevent Radix UI Select from shifting layout */
     margin-right: 0 !important;
   }
 
-  /* Mobile-specific optimizations for background images */
-  @media (max-width: 768px) {
-    body {
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    /* Prevent iOS scroll bounce that can affect background positioning */
-    html,
-    body {
-      height: 100%;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-    }
+  ::selection {
+    background: rgba(236, 199, 100, 0.32);
+    color: #fff;
   }
 
-  /* Use overlay scrollbars that don't affect layout */
-  html {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(155, 155, 155, 0.6) transparent;
-  }
-
-  /* For Webkit browsers (Chrome, Safari, Edge) */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(155, 155, 155, 0.6);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(155, 155, 155, 0.8);
-  }
-
-  /* Modern overlay scrollbar support */
-  @supports (scrollbar-width: auto) {
-    html {
-      scrollbar-width: auto;
-      overflow: overlay;
-    }
-  }
-
-  :root {
-    --chart-1: oklch(0.65 0.2 40);
-    --chart-2: oklch(0.6 0.15 180);
-    --chart-3: oklch(0.4 0.1 230);
-    --chart-4: oklch(0.8 0.2 85);
-    --chart-5: oklch(0.75 0.2 70);
-    --chart-6: oklch(0.6 0.15 140);
-  }
-
-  .dark {
-    --chart-1: oklch(0.6 0.2 275);
-    --chart-2: oklch(0.7 0.15 160);
-    --chart-3: oklch(0.75 0.2 70);
-    --chart-4: oklch(0.65 0.25 300);
-    --chart-5: oklch(0.65 0.25 15);
-    --chart-6: oklch(0.6 0.15 180);
+  input::placeholder {
+    color: var(--ink-3);
   }
 }
 
 @layer utilities {
+  .font-serif {
+    font-family: var(--font-cormorant), Georgia, serif;
+  }
+
+  /* Hide scrollbars on horizontally scrolling chip rows */
+  .no-scrollbar,
+  [data-hbar] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar,
+  [data-hbar]::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+    display: none;
+  }
+
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+    background: linear-gradient(100deg, var(--gold-2), var(--gold) 55%, var(--gold-deep));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
-  .glass {
-    @apply bg-background/60 backdrop-blur-xl border border-white/10 dark:border-white/5;
+
+  @keyframes twinkle { 0%, 100% { opacity: .25; transform: scale(.7) } 50% { opacity: 1; transform: scale(1.15) } }
+  @keyframes drift { 0% { transform: translate(0, 0) } 33% { transform: translate(16px, -26px) } 66% { transform: translate(-10px, -12px) } 100% { transform: translate(0, 0) } }
+  @keyframes floaty { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px) } to { opacity: 1; transform: translateY(0) } }
+  @keyframes grow { from { opacity: .4; transform: scaleY(0) } to { opacity: 1; transform: scaleY(1) } }
+  @keyframes draw { to { stroke-dashoffset: 0 } }
+  @keyframes pulse-soft { 0%, 100% { opacity: 1; transform: scale(1) } 50% { opacity: .35; transform: scale(.78) } }
+  @keyframes cloudfloat { 0%, 100% { transform: translateX(0) } 50% { transform: translateX(34px) } }
+
+  .anim-pulse { animation: pulse-soft 2.2s ease-in-out infinite; }
+  .anim-rise { animation: rise .6s ease both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
   }
-  .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/10 dark:border-white/5 shadow-xl;
-  }
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0px); }
-  }
-  .bg-mesh {
-    background-color: var(--background);
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-      radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-      radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
-  }
-  .dark .bg-mesh {
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-      radial-gradient(at 50% 0%, hsla(225,39%,30%,0.3) 0, transparent 50%), 
-      radial-gradient(at 100% 0%, hsla(339,49%,30%,0.3) 0, transparent 50%);
-  }
+}
+
+[data-anim='off'] * {
+  animation: none !important;
 }
